@@ -1,0 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #003fff;
+    overflow: hidden;
+  }
+
+  #scroll-capture {
+    position: fixed;
+    inset: 0;
+    overflow-y: scroll;
+    z-index: 999;
+    opacity: 0;
+  }
+  #scroll-spacer { height: 800vh; }
+
+  /*
+    APPROCHE CORRECTE :
+    Une seule bande de contenu, rendue 3 fois via des "miroirs clippés".
+
+    Chaque plan est une div qui :
+    1. Clip son contenu à sa zone (overflow: hidden)
+    2. Applique rotateX pour la déformation
+    3. Contient une copie de la bande avec le BON offset
+       pour que le contenu soit CONTINU entre les plans.
+
+    La continuité seamless :
+    - plan-haut  : top=0,    height=15vh → montre la bande de y_scroll à y_scroll+15vh
+                   mais sa bande doit être décalée pour que son bord BAS
+                   soit aligné avec le bord HAUT du plan-centre.
+                   → son bord bas est à 15vh de l'écran.
+                   → plan-centre commence à 15vh et montre depuis y_scroll.
+                   → donc plan-haut doit montrer y_scroll - 15vh à y_scroll.
+                   → translateY de b-haut = -(y_scroll - 15vh) = -y_scroll + 15vh
+
+    - plan-centre: top=15vh, height=70vh → translateY = -y_scroll
+
+    - plan-bas   : top=85vh, height=15vh → montre y_scroll+70vh à y_scroll+85vh
+                   → translateY = -y_scroll   (même ref, plan commence à 85vh
+                      et bande continue depuis 70vh plus bas que centre)
+                   → mais plan-bas top=85vh, donc sa bande à translateY=0
+                     serait décalée de 85vh vers le bas vs plan-centre.
+                   → pour aligner : translateY = -y_scroll - (85vh - 15vh) = -y_scroll - 70vh
+                   Attends, simplifions :
+                   
+    RÈGLE SIMPLE :
+    Chaque plan a son top = T dans l'écran.
+    Sa bande doit montrer la partie de la bande qui correspond
+    à ce qui serait visible si la bande traversait l'écran en continu.
+    
+    Si la bande était positionnée fixed avec top=0 et translateY=-y_scroll,
+    dans le plan qui a top=T, la bande visible commence à y_scroll + T
+    (puisque le plan masque tout sauf sa zone).
+    
+    Pour que la bande dans ce plan montre y_scroll + T :
+    translateY = -(y_scroll + T) + T = -y_scroll
+    
+    DONC : tous les plans ont translateY = -y_scroll. C'est ce qu'on faisait !
+    
+    Le vrai problème était que chaque plan a HEIGHT différente,
+    mais la bande dans chaque plan commence à top:0 du plan.
+    Donc la bande dans plan-haut (top=0, h=15vh) montre [0, 15vh] de la bande.
+    La bande dans plan-centre (top=15vh, h=70vh) montre [0, 70vh] de la bande.
+    
+    Pour que plan-haut montre [−15vh, 0] de la bande (i.e. la tranche AVANT),
+    on doit décaler sa bande de +15vh :
+    translateY = -y_scroll + 15vh
+    
+    Et plan-bas (top=85vh) doit montrer [70vh, 85vh] de la bande :
+    translateY = -y_scroll - 70vh
+    
+    Récap :
+    b-haut   : translateY(-y_scroll + TOP_CENTRE)      = translateY(-y + 15vh)
+    b-centre : translateY(-y_scroll)
+    b-bas    : translateY(-y_scroll - HEIGHT_CENTRE)    = translateY(-y - 70vh)
+  */
+
+  #scene {
+    position: fixed;
+    inset: 0;
+    perspective: 150px;
+    perspective-origin: 50% 50%;
+    overflow: hidden;
+  }
+
+  #cube-shell {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+  }
+
+  #plan-haut {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: calc(15vh + 1px);
+    overflow: hidden;
+    transform-origin: bottom center;
+    transform: rotateX(-45deg);
+    background: #003fff;
+  }
+
+  #plan-centre {
+    position: absolute;
+    top: 15vh; left: 0; width: 100%; height: 70vh;
+    overflow: hidden;
+    background: #003fff;
+  }
+
+  #plan-bas {
+    position: absolute;
+    top: calc(85vh - 1px); left: 0; width: 100%; height: calc(15vh + 1px);
+    overflow: hidden;
+    transform-origin: top center;
+    transform: rotateX(45deg);
+    background: #003fff;
+  }
+
+  /* Chaque bande est positionnée absolue dans son plan */
+  .bande {
+    position: absolute;
+    top: 0; left: 0; width: 100%;
+    will-change: transform;
+  }
+
+  /* Sections — height = 70vh pour remplir le plan centre */
+  .section {
+    width: 100%;
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 120px;
+    text-align: center;
+    gap: 0;
+  }
+
+  .s-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    color: #6080cc;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .s-body {
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .s-body h2 {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2rem, 5vw, 5rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    color: #c8dcff;
+    margin-bottom: 40px;
+  }
+
+  .s-divider {
+    width: 100%;
+    height: 1px;
+    background: #ffffff60;
+    margin: 20px auto;
+    width: 60%;
+  }
+
+  .s-body p {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    line-height: 2;
+    color: #8aaaee;
+    text-align: center;
+  }
+
+
+
+  #vignette {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 190;
+    background:
+      radial-gradient(ellipse 20% 100% at 0%   50%, #001eaacc 0%, transparent 100%),
+      radial-gradient(ellipse 20% 100% at 100% 50%, #001eaacc 0%, transparent 100%);
+  }
+
+  #hint {
+    position: fixed; bottom: 28px; right: 28px;
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    letter-spacing: 0.4em; color: #2a4a8a; text-transform: uppercase;
+    z-index: 500; writing-mode: vertical-rl; transition: opacity 0.8s;
+  }
