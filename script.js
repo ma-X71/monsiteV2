@@ -10,10 +10,10 @@ const SECTIONS = [
   },
   {
     num: '002',
-    title: 'Plans\nfixes.',
+    title: 'Plansfixes.',
     paras: [
       'Plan haut : rotateX(-45°), ancré à sa jonction basse.',
-      'Plan centre : plat, face à toi. C\'est là que vit le contenu principal.',
+      'Plan centre :  plat, face à toi. C\'est là que vit le contenu principal.',
       'Plan bas : rotateX(45°), ancré à sa jonction haute.'
     ]
   },
