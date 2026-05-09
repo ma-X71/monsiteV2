@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cube Intérieur</title>
+  <title>Maxans.fr</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,38 +25,33 @@
 const SECTIONS = [
   {
     num: '001',
-    title: 'caca',
+    title: 'Maxans Albert',
     paras: [
-      ' loremmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm ',
-      'Seul le texte se déplace quand tu scrolles.',
-      'La déformation ne bouge jamais — c\'est la géométrie fixe du cube.'
+      ' Etudiant en CPGE — Université Nice Côte d\'Azur ' +
+      '<br>Polymathe par nature.' +
+      '<br><a href="mailto:contact@maxans.fr" style="color:white">contact@maxans.fr</a>' +
+      '<br><a href="http://instagram.com/maxans_albr" style="color:white">instagram.com/maxans_albr</a>'
     ]
   },
   {
     num: '002',
-    title: 'Plans\nfixes.',
+    title: 'Ce que jaime faire.',
     paras: [
-      'Plan haut : rotateX(-45°), ancré à sa jonction basse.',
-      'Plan centre : plat, face à toi. C\'est là que vit le contenu principal.',
-      'Plan bas : rotateX(45°), ancré à sa jonction haute.'
+      'Faire de la physique , photographie , lire des livres de plus de 1500g<br>vendre des données personelles , collectioner des cd , randonnées'
     ]
   },
   {
     num: '003',
-    title: 'Seamless.',
+    title: 'Photothèque.',
     paras: [
-      'Chaque bande a un offset vertical précis pour que le contenu soit continu aux jonctions.',
-      'Plan haut : translateY(-y + 15vh). Plan centre : translateY(-y).',
-      'Plan bas : translateY(-y − 70vh). Continuité parfaite aux arêtes.'
+      'Cliquer ici pour acceder à ma photothèque'
     ]
   },
   {
     num: '004',
-    title: 'Perspective\nnative.',
+    title: 'Ma collection de cd.',
     paras: [
-      'Aucune librairie. CSS preserve-3d et rotateX uniquement.',
-      'La perspective déforme le texte naturellement quand il entre dans les zones inclinées.',
-      'Plus la valeur est basse, plus le FOV est large — comme Minecraft.'
+      'Cliquer ici pour acceder à ma collection de cd'
     ]
   },
   {
@@ -124,8 +119,8 @@ document.getElementById('scroll-spacer').style.height =
 
 let scrollY = 0, currentY = 0;
 
-document.getElementById('scroll-capture').addEventListener('scroll', e => {
-  scrollY = e.target.scrollTop;
+window.addEventListener('wheel', e => {
+  scrollY = Math.max(0, scrollY + e.deltaY);
   document.getElementById('hint').style.opacity = scrollY > 40 ? '0' : '1';
 });
 

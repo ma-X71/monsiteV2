@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Albums</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background: #003fff;
+      color: #c8dcff;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 40px 60px 32px;
+      border-bottom: 1px solid #1a4fff40;
+    }
+    header h1 {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.4rem, 3vw, 2.8rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #c8dcff;
+      line-height: 1;
+    }
+    header p {
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: #6080cc;
+      text-transform: uppercase;
+    }
+
+    /* ── Grid ── */
+    main {
+      padding: 48px 60px 80px;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 28px;
+    }
+
+    /* ── Album card ── */
+    .album-card {
+      cursor: pointer;
+      position: relative;
+      border: 1px solid #1a4fff40;
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+      background: #001eaa18;
+    }
+    .album-card:hover {
+      border-color: #c8dcff60;
+      transform: translateY(-3px);
+    }
+    .album-card.playing {
+      border-color: #c8dcff;
+    }
+
+    /* Cover */
+    .cover-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: #001eaa40;
+    }
+    .cover-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.3s;
+    }
+    .cover-wrap .cover-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: #2a4a8a;
+    }
+
+    /* Play overlay */
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #003fffaa;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .album-card:hover .play-overlay { opacity: 1; }
+    .album-card.playing .play-overlay { opacity: 1; }
+    .play-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid #c8dcff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .play-icon svg { width: 22px; height: 22px; fill: #c8dcff; }
+
+    /* Progress bar */
+    .progress-bar {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 3px;
+      background: #c8dcff;
+      width: 0%;
+      transition: width 0.5s linear;
+    }
+
+    /* Info */
+    .album-info {
+      padding: 14px 14px 16px;
+    }
+    .album-title {
+      font-family: 'Unbounded', sans-serif;
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: -0.01em;
+      color: #c8dcff;
+      line-height: 1.3;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .album-artist {
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: #6080cc;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Playing pulse */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .album-card.playing .album-title {
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    /* Equalizer bars on playing card */
+    .eq-bars {
+      display: inline-flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 10px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .eq-bars span {
+      display: block;
+      width: 2px;
+      background: #c8dcff;
+      border-radius: 1px;
+      animation: eq 0.6s ease-in-out infinite alternate;
+    }
+    .eq-bars span:nth-child(1) { height: 4px; animation-delay: 0s; }
+    .eq-bars span:nth-child(2) { height: 9px; animation-delay: 0.15s; }
+    .eq-bars span:nth-child(3) { height: 6px; animation-delay: 0.3s; }
+    .eq-bars span:nth-child(4) { height: 10px; animation-delay: 0.05s; }
+    @keyframes eq {
+      from { transform: scaleY(0.3); }
+      to { transform: scaleY(1); }
+    }
+
+    /* Vignette sides */
+    #vignette {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 190;
+      background:
+        radial-gradient(ellipse 18% 100% at 0% 50%, #001eaaaa 0%, transparent 100%),
+        radial-gradient(ellipse 18% 100% at 100% 50%, #001eaaaa 0%, transparent 100%);
+    }
+
+    /* Player bar */
+    #player-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 0;
+      overflow: hidden;
+      background: #001680ee;
+      border-top: 1px solid #c8dcff30;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      padding: 0 60px;
+      gap: 20px;
+      transition: height 0.3s ease;
+      z-index: 500;
+    }
+    #player-bar.visible { height: 64px; }
+    #pb-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      color: #c8dcff;
+      white-space: nowrap;
+    }
+    #pb-artist {
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: #6080cc;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+    #pb-info { flex: 1; min-width: 0; overflow: hidden; }
+    #pb-time { font-size: 9px; letter-spacing: 0.2em; color: #6080cc; white-space: nowrap; }
+    #pb-stop {
+      background: none;
+      border: 1px solid #c8dcff40;
+      color: #6080cc;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    #pb-stop:hover { color: #c8dcff; border-color: #c8dcff80; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: #001eaaee;
+      border: 1px solid #c8dcff30;
+      color: #6080cc;
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      padding: 10px 20px;
+      border-radius: 2px;
+      opacity: 0;
+      transition: opacity 0.4s, transform 0.4s;
+      pointer-events: none;
+      z-index: 600;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div id="vignette"></div>
+
+<header>
+  <h1>Albums</h1>
+  <p>Clique pour écouter 30s</p>
+</header>
+
+<main>
+  <div id="grid"></div>
+</main>
+
+<div id="player-bar">
+  <div id="pb-info">
+    <div id="pb-title">—</div>
+    <div id="pb-artist">—</div>
+  </div>
+  <span id="pb-time">0:00 / 0:30</span>
+  <button id="pb-stop">■ Stop</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/*
+  ╔══════════════════════════════════════════════════════╗
+  ║  ALBUMS — ajoute tes albums ici                      ║
+  ║                                                      ║
+  ║  Chaque entrée = un objet avec :                     ║
+  ║    title   : nom de l'album                          ║
+  ║    artist  : nom de l'artiste                        ║
+  ║    cover   : URL de l'image de couverture            ║
+  ║    preview : URL d'un fichier audio (MP3, etc.)      ║
+  ║                                                      ║
+  ║  Pour le preview, tu peux utiliser :                 ║
+  ║    - Deezer  : deezer.com → clic droit sur preview   ║
+  ║    - Spotify : pas d'URL directe, utilise SoundCloud ║
+  ║    - Tout fichier audio accessible en ligne          ║
+  ╚══════════════════════════════════════════════════════╝
+*/
+const ALBUMS = [
+  {
+    title: 'Random Access Memories',
+    artist: 'Daft Punk',
+    cover: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Random_Access_Memories.jpg',
+    preview: 'https://cdnt-preview.dzcdn.net/api/1/1/8/9/0/0/8904fd2589240ec30d566c53febce4aa.mp3'
+  },
+  {
+    title: 'Blonde',
+    artist: 'Frank Ocean',
+    cover: 'https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg',
+    preview: 'https://cdnt-preview.dzcdn.net/api/1/1/8/9/0/0/8904fd2589240ec30d566c53febce4aa.mp3?hdnea=exp=1778366000~acl=/api/1/1/8/9/0/0/8904fd2589240ec30d566c53febce4aa.mp3*~data=user_id=0,application_id=42~hmac=e4fbcbce9cac7e83a52a7445f8dbb9a24d35d0f38bfd5483a8b64c616782890d'
+  },
+  {
+    title: 'Discovery',
+    artist: 'Daft Punk',
+    cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/8/82/Discovery_album.jpg/220px-Discovery_album.jpg',
+    preview: 'https://cdns-preview-4.dzcdn.net/stream/c-4eff51b0c78f8c1a5d66a34498cc5e35-6.mp3'
+  },
+  {
+    title: 'Currents',
+    artist: 'Tame Impala',
+    cover: 'https://upload.wikimedia.org/wikipedia/en/9/9b/Tame_Impala_-_Currents.png',
+    preview: ''
+  },
+  {
+    title: 'In Rainbows',
+    artist: 'Radiohead',
+    cover: 'https://upload.wikimedia.org/wikipedia/en/3/3e/In_Rainbows_Official_Cover.jpg',
+    preview: ''
+  },
+  {
+    title: 'Borderline',
+    artist: 'Tame Impala',
+    cover: 'https://upload.wikimedia.org/wikipedia/en/5/54/Tame_Impala_-_The_Slow_Rush.png',
+    preview: 'https://cdnt-preview.dzcdn.net/api/1/1/e/f/e/0/efe16471ba48ab8dd697e33793a7d039.mp3?hdnea=exp=1778366723~acl=/api/1/1/e/f/e/0/efe16471ba48ab8dd697e33793a7d039.mp3*~data=user_id=0,application_id=42~hmac=011e801cb9d5f6917252eb1c35101ea4cd2414c47bcac07c8bac936bc25eb50d'
+  },
+];
+
+/* ─── Player state ─── */
+let currentAudio = null;
+let currentCard  = null;
+let progressTimer = null;
+
+function stopCurrent() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (currentCard) {
+    currentCard.classList.remove('playing');
+    const bar = currentCard.querySelector('.progress-bar');
+    if (bar) bar.style.width = '0%';
+    currentCard = null;
+  }
+  clearInterval(progressTimer);
+  document.getElementById('player-bar').classList.remove('visible');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function playAlbum(card, album) {
+  if (!album.preview) {
+    showToast('Pas de preview disponible');
+    return;
+  }
+  if (currentCard === card) { stopCurrent(); return; }
+  stopCurrent();
+
+  const audio = new Audio(album.preview);
+  audio.crossOrigin = 'anonymous';
+  currentAudio = audio;
+  currentCard  = card;
+  card.classList.add('playing');
+
+  /* Player bar */
+  const bar = document.getElementById('player-bar');
+  document.getElementById('pb-title').textContent  = album.title;
+  document.getElementById('pb-artist').textContent = album.artist;
+  bar.classList.add('visible');
+
+  /* Time update */
+  const pbTime = document.getElementById('pb-time');
+  const progBar = card.querySelector('.progress-bar');
+  const MAX_S   = 30;
+
+  function formatTime(s) {
+    return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  }
+
+  progressTimer = setInterval(() => {
+    const t = audio.currentTime;
+    if (t >= MAX_S || audio.ended) { stopCurrent(); return; }
+    const pct = (t / MAX_S) * 100;
+    progBar.style.width = pct + '%';
+    pbTime.textContent = `${formatTime(t)} / 0:30`;
+  }, 250);
+
+  audio.play().catch(() => {
+    stopCurrent();
+    showToast('Erreur lecture audio');
+  });
+
+  audio.addEventListener('ended', stopCurrent);
+}
+
+/* ─── Render grid ─── */
+const grid = document.getElementById('grid');
+ALBUMS.forEach(album => {
+  const card = document.createElement('div');
+  card.className = 'album-card';
+
+  const coverHTML = album.cover
+    ? `<img src="${album.cover}" alt="${album.title}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+
+  card.innerHTML = `
+    <div class="cover-wrap">
+      ${coverHTML}
+      <div class="cover-placeholder" style="${album.cover ? 'display:none' : ''}">♪</div>
+      <div class="play-overlay">
+        <div class="play-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="progress-bar"></div>
+    </div>
+    <div class="album-info">
+      <div class="album-title">
+        ${album.title}
+        <span class="eq-bars" style="display:none">
+          <span></span><span></span><span></span><span></span>
+        </span>
+      </div>
+      <div class="album-artist">${album.artist}</div>
+    </div>
+  `;
+
+  /* Toggle eq bars visibility with playing state */
+  const observer = new MutationObserver(() => {
+    const eq = card.querySelector('.eq-bars');
+    eq.style.display = card.classList.contains('playing') ? 'inline-flex' : 'none';
+    const icon = card.querySelector('.play-icon svg');
+    if (card.classList.contains('playing')) {
+      icon.innerHTML = '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>';
+    } else {
+      icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    }
+  });
+  observer.observe(card, { attributes: true, attributeFilter: ['class'] });
+
+  card.addEventListener('click', () => playAlbum(card, album));
+  if (!album.preview) card.title = 'Pas de preview';
+  grid.appendChild(card);
+});
+
+document.getElementById('pb-stop').addEventListener('click', stopCurrent);
+</script>
+
+</body>
+</html>
