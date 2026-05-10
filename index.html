@@ -131,7 +131,7 @@ window.addEventListener('touchstart', e => {
 
 window.addEventListener('touchmove', e => {
   if (isTouchingLink) return;
-  const delta = touchStartY - e.touches[0].clientY;
+  const delta = touchStartY - e.touches[0].clientY * 4 ;
   touchStartY = e.touches[0].clientY;
   scrollY = Math.max(0, Math.min(scrollY + delta, maxScroll()));
   hint.style.opacity = scrollY > 40 ? '0' : '1';
