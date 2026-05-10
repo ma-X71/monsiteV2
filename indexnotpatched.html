@@ -19,6 +19,8 @@
   </div>
 </div>
 
+<div id="scroll-capture"><div id="scroll-spacer"></div></div>
+
 <script>
 const SECTIONS = [
   {
@@ -92,9 +94,8 @@ const SECTIONS = [
 
 const N = SECTIONS.length;
 const vh = () => window.innerHeight;
-const TOP_CENTRE = () => vh() * 0.15;
-const H_CENTRE   = () => vh() * 0.70;
-const maxScroll  = () => (N - 1) * H_CENTRE();
+const TOP_CENTRE  = () => vh() * 0.15;   // 15vh
+const H_CENTRE    = () => vh() * 0.70;   // 70vh
 
 function renderSection(s) {
   const parasHTML = s.paras.map((p, i) =>
@@ -107,42 +108,47 @@ function renderSection(s) {
     + parasHTML
     + '</div></div>';
 }
-
 const bandeHTML = SECTIONS.map(renderSection).join('');
+
 document.getElementById('b-haut').innerHTML   = bandeHTML;
 document.getElementById('b-centre').innerHTML = bandeHTML;
 document.getElementById('b-bas').innerHTML    = bandeHTML;
 
-let scrollY = 0, currentY = 0, touchStartY = 0, isTouchingLink = false;
+document.getElementById('scroll-spacer').style.height =
+  ((N - 1) * H_CENTRE() + vh()) + 'px';
 
-const hint = document.getElementById('hint');
+let scrollY = 0, currentY = 0;
 
-// — Souris —
 window.addEventListener('wheel', e => {
-  scrollY = Math.max(0, Math.min(scrollY + e.deltaY, maxScroll()));
-  hint.style.opacity = scrollY > 40 ? '0' : '1';
-}, { passive: true });
+  scrollY = Math.max(0, scrollY + e.deltaY);
+  document.getElementById('hint').style.opacity = scrollY > 40 ? '0' : '1';
+});
 
-// — Touch —
-window.addEventListener('touchstart', e => {
-  isTouchingLink = !!e.target.closest('a');
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
-
-window.addEventListener('touchmove', e => {
-  if (isTouchingLink) return;
-  const delta = touchStartY - e.touches[0].clientY;
-  touchStartY = e.touches[0].clientY;
-  scrollY = Math.max(0, Math.min(scrollY + delta, maxScroll()));
-  hint.style.opacity = scrollY > 40 ? '0' : '1';
-}, { passive: true });
-
-// — Boucle d'animation —
 function tick() {
   currentY += (scrollY - currentY) * 0.1;
   const y  = currentY;
-  const tc = TOP_CENTRE();
-  const hc = H_CENTRE();
+  const tc = TOP_CENTRE();   // 15vh en px
+  const hc = H_CENTRE();     // 70vh en px
+
+  /*
+    Pour que le contenu soit seamless aux jonctions :
+    
+    plan-centre top=tc, affiche la bande depuis y.
+    → b-centre : translateY(-y)
+    
+    plan-haut top=0, height=tc.
+    Son bord BAS est à tc = jonction avec plan-centre.
+    Son bord BAS doit montrer exactement ce que plan-centre montre en haut.
+    plan-centre montre y en haut → plan-haut doit montrer y en bas de sa zone.
+    Sa zone fait tc de haut, donc son haut = y - tc.
+    → b-haut doit commencer à y - tc → translateY(-(y - tc)) = translateY(-y + tc)
+    
+    plan-bas top=tc+hc, height=tc.
+    Son bord HAUT est à tc+hc = jonction avec plan-centre.
+    Son bord HAUT doit montrer exactement ce que plan-centre montre en bas.
+    plan-centre montre y+hc en bas → plan-bas doit montrer y+hc en haut.
+    → b-bas doit commencer à y+hc → translateY(-(y + hc))
+  */
 
   document.getElementById('b-haut').style.transform   = `translateY(${-y + tc}px)`;
   document.getElementById('b-centre').style.transform = `translateY(${-y}px)`;
@@ -151,10 +157,15 @@ function tick() {
   requestAnimationFrame(tick);
 }
 
+// Init spacer
+document.getElementById('scroll-spacer').style.height =
+  ((N - 1) * H_CENTRE() + vh()) + 'px';
+
 tick();
 
 window.addEventListener('resize', () => {
-  scrollY = Math.min(scrollY, maxScroll());
+  document.getElementById('scroll-spacer').style.height =
+    ((N - 1) * H_CENTRE() + vh()) + 'px';
 });
 </script>
 </body>
