@@ -1,4 +1,3 @@
-// api/preview.js
 export default async function handler(req, res) {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'ID manquant' });
@@ -9,7 +8,7 @@ export default async function handler(req, res) {
 
     if (!data.preview) return res.status(404).json({ error: 'Preview introuvable' });
 
-    // Correction indispensable pour éviter le blocage navigateur
+    // IMPORTANT : Remplace http par https
     const secureUrl = data.preview.replace('http://', 'https://');
     res.status(200).json({ url: secureUrl });
   } catch (e) {
