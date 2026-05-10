@@ -1,5 +1,7 @@
 {
   "name": "monsite-v2",
   "version": "1.0.0",
-  "dependencies": {}
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
 }
