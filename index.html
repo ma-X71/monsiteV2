@@ -6,6 +6,19 @@
   <link rel="icon" type="image/gif" href="assetsmain/kone01.gif">
   <title>Maxans.fr</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+#sg { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:#ffffff18; border:1px solid #ffffff22; width:min(780px,90vw); margin-top:32px; }
+.sg-cell { background:#0238d8; padding:18px 20px; display:flex; flex-direction:column; gap:6px; }
+.sg-cell.wide { grid-column:1/-1; }
+.sg-cell.mid  { grid-column:span 2; }
+.sg-lbl { font-family:'Space Mono',monospace; font-size:7px; letter-spacing:0.5em; color:#4466bb; text-transform:uppercase; }
+.sg-val { font-family:'Space Mono',monospace; font-size:15px; letter-spacing:0.08em; color:#223388; transition:color .5s; }
+.sg-val.on { color:#c8dcff; }
+.sg-val.live { color:#6688dd; }
+.sg-msg { font-family:'Space Mono',monospace; font-size:10px; color:#223388; font-style:italic; letter-spacing:0.04em; transition:color .5s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sg-msg.on { color:#8aaaee; }
+.sg-bar { height:1px; background:linear-gradient(90deg,#4466bb,transparent); width:0; transition:width 1.2s ease; margin-top:6px; }
+</style>
 </head>
 <body>
 
@@ -106,7 +119,30 @@ const SECTIONS = [
       'Le cube ne bouge jamais.',
       'C\'est toi qui traverses le contenu.'
     ]
-  }
+  },
+  {
+  num: '00X',
+  title: 'SYSTEM\nDATA.',
+  paras: [
+    '<div id="sg">'
+    + '<div class="sg-cell wide"><div class="sg-lbl">░ DASHBOARD — MAXANS.FR ░</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Visites totales</div><div class="sg-val" data-sg="visits">——</div><div class="sg-bar" data-sg="bar-v"></div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Durée session</div><div class="sg-val live" data-sg="session">00:00</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Heure locale</div><div class="sg-val live" data-sg="clock">——:——:——</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Résolution</div><div class="sg-val" data-sg="res">——</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Navigateur</div><div class="sg-val" data-sg="ua">——</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Fuseau horaire</div><div class="sg-val" data-sg="tz">——</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Dernier commit SHA</div><div class="sg-val" data-sg="sha">——</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Δ Commit</div><div class="sg-val" data-sg="delta">——</div></div>'
+    + '<div class="sg-cell"><div class="sg-lbl">Commits total</div><div class="sg-val" data-sg="total">——</div></div>'
+    + '<div class="sg-cell wide"><div class="sg-lbl">Message</div><div class="sg-msg" data-sg="msg">——</div></div>'
+    + '</div>'
+  ]
+},
+{ num: '', title: '', paras: [''] },
+{ num: '', title: '', paras: [''] },
+{ num: '', title: '', paras: [''] },
+{ num: '', title: '', paras: [''] },
 ];
 
 const N = SECTIONS.length;
@@ -171,7 +207,43 @@ function tick() {
 }
 
 tick();
+// STATS — querySelectorAll pour mettre à jour les 3 copies de la bande
+const _t0 = Date.now();
+const setV = (key, v) => document.querySelectorAll('[data-sg="'+key+'"]').forEach(e => { e.textContent = v; e.classList.add('on'); });
 
+// Session + horloge live
+setInterval(() => {
+  const s = Math.floor((Date.now()-_t0)/1000);
+  setV('session', String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'));
+  const n = new Date();
+  setV('clock', String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0'));
+}, 1000);
+
+// Navigateur / résolution / fuseau
+const ua = navigator.userAgent;
+setV('ua', ua.includes('Firefox')?'Firefox':ua.includes('Edg')?'Edge':ua.includes('OPR')?'Opera':ua.includes('Chrome')?'Chrome':ua.includes('Safari')?'Safari':'Autre');
+setV('res', screen.width+'×'+screen.height);
+setV('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
+
+// Visites — counterapi.dev (remplaçant de CountAPI)
+(async () => { try {
+  const d = await (await fetch('https://api.counterapi.dev/v1/ma-X71/monsiteV2/up')).json();
+  setV('visits', d.count.toLocaleString('fr-FR'));
+  document.querySelectorAll('[data-sg="bar-v"]').forEach(e => setTimeout(() => e.style.width='100%', 200));
+} catch(e) { setV('visits','n/a'); } })();
+
+// GitHub — dernier commit + total
+(async () => { try {
+  const res = await fetch('https://api.github.com/repos/ma-X71/monsiteV2/commits?per_page=1');
+  const link = res.headers.get('Link') || '';
+  const match = link.match(/page=(\d+)>; rel="last"/);
+  setV('total', match ? match[1] : '?');
+  const [c] = await res.json();
+  setV('sha', c.sha.slice(0,7));
+  setV('msg', c.commit.message.split('\n')[0]);
+  const ago = Math.floor((Date.now() - new Date(c.commit.author.date)) / 86400000);
+  setV('delta', ago === 0 ? "aujourd'hui" : ago === 1 ? 'il y a 1j' : 'il y a '+ago+'j');
+} catch(e) { setV('sha','n/a'); } })();
 window.addEventListener('resize', () => {
   scrollY = Math.min(scrollY, maxScroll());
 });
