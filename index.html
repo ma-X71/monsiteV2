@@ -141,8 +141,6 @@ const SECTIONS = [
 },
 { num: '', title: '', paras: [''] },
 { num: '', title: '', paras: [''] },
-{ num: '', title: '', paras: [''] },
-{ num: '', title: '', paras: [''] },
 ];
 
 const N = SECTIONS.length;
@@ -225,12 +223,14 @@ setV('ua', ua.includes('Firefox')?'Firefox':ua.includes('Edg')?'Edge':ua.include
 setV('res', screen.width+'×'+screen.height);
 setV('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-// Visites — counterapi.dev (remplaçant de CountAPI)
-(async () => { try {
-  const d = await (await fetch('https://api.counterapi.dev/v1/ma-X71/monsiteV2/up')).json();
-  setV('visits', d.count.toLocaleString('fr-FR'));
-  document.querySelectorAll('[data-sg="bar-v"]').forEach(e => setTimeout(() => e.style.width='100%', 200));
-} catch(e) { setV('visits','n/a'); } })();
+(async () => {
+  try {
+    const d = await (await fetch('/api/count')).json();
+    setV('visits', d.count.toLocaleString('fr-FR'));
+    document.querySelectorAll('[data-sg="bar-v"]')
+      .forEach(e => setTimeout(() => e.style.width = '100%', 200));
+  } catch(e) { setV('visits', 'n/a'); }
+})();
 
 // GitHub — dernier commit + total
 (async () => { try {
