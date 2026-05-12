@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   const supabase = createClient(
@@ -12,4 +12,4 @@ export default async function handler(req, res) {
   if (error) return res.status(500).json({ error: error.message });
 
   res.json({ count: data });
-}
+};
