@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Photothèque — Maxans</title>
+  <title>Photothèque</title>
   <link rel="icon" type="image/gif" href="assetsmain/kone01.gif">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@900&display=swap" rel="stylesheet">
   <style>
@@ -347,13 +347,6 @@
     #gallery-wrapper { opacity: 0; pointer-events: none; transition: opacity .5s ease; }
     #gallery-wrapper.visible { opacity: 1; pointer-events: all; }
 
-    .logout-btn {
-      font-size: 9px; letter-spacing: 0.4em; color: #ff0000;
-      text-transform: uppercase; background: none; border: none;
-      font-family: 'Space Mono', monospace; cursor: pointer; transition: color .2s;
-    }
-    .logout-btn:hover { color: #ffffff; }
-
     /* ─── Lightbox ───────────────────────────── */
     #lightbox {
       position: fixed; inset: 0;
@@ -402,9 +395,9 @@
   <div class="ls-glow"></div>
 
   <div class="login-card">
-    <p class="lc-brand">MAXANS.IO</p>
+    <p class="lc-brand">MAXANS.FR</p>
     <h1 class="lc-title">Photothèque</h1>
-    <p class="lc-sub">Espace privé</p>
+    <p class="lc-sub">Espace sécurisé </p>
     <div class="lc-sep"></div>
     <p class="lc-hint">Indice : Département où j'ai grandi<br>pendant 4 ans.</p>
     <input
@@ -434,7 +427,6 @@
         <button class="filter-btn" data-filter="video">Vidéos</button>
       </div>
       <a href="index.html" class="back-link">← Accueil</a>
-      <button class="logout-btn" id="logout-btn">Déconnexion</button>
     </div>
   </header>
 
@@ -526,10 +518,7 @@ const MEDIA = [
   },
 ];
 
-/* ═══════════════════════════════════════════════
-   AUTH — sécurisée via API Vercel
-   Le mot de passe n'est JAMAIS dans ce fichier.
-═══════════════════════════════════════════════ */
+/* et oui batard j'ai update le site pour que ce soit sécurisé mtn , va te faire foutre*/
 
 const TOKEN_KEY = 'maxans_auth_token';
 
@@ -587,12 +576,12 @@ async function doLogin() {
       sessionStorage.setItem(TOKEN_KEY, data.token);
       showGallery();
     } else {
-      loginError.textContent = data.error || 'Mot de passe incorrect.';
+      loginError.textContent = data.error || 'Mot de passe incorrect , gros neuille.';
       loginInput.value = '';
       loginInput.focus();
     }
   } catch {
-    loginError.textContent = 'Erreur réseau. Réessaie.';
+    loginError.textContent = 'Erreur réseau. allume ton wifi frero';
   } finally {
     loginBtn.disabled = false;
     loginBtn.textContent = 'Entrer →';
@@ -602,18 +591,8 @@ async function doLogin() {
 loginBtn.addEventListener('click', doLogin);
 loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-  sessionStorage.removeItem(TOKEN_KEY);
-  location.reload();
-});
-
 // Lance la vérification au chargement
 checkStoredToken();
-
-
-/* ═══════════════════════════════════════════════
-   GALERIE — code inchangé
-═══════════════════════════════════════════════ */
 
 let activeFilter  = 'all';
 let filteredMedia = [];
