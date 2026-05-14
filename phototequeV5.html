@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photothèque — Maxans</title>
+  <link rel="icon" type="image/gif" href="assetsmain/kone01.gif">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@900&display=swap" rel="stylesheet">
+  <style>
+    /* ─── Reset ─────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      width: 100%;
+      min-height: 100vh;
+      background: #003fff;
+      color: #ffffff;
+      font-family: 'MS Gothic', 'Gothic MS', monospace;
+      overflow-x: hidden;
+    }
+
+    /* ─── Grain ──────────────────────────────── */
+    #grain {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+    @keyframes grain {
+      0%,100% { transform:translate(0,0); }
+      10%  { transform:translate(-5%,-10%); }
+      30%  { transform:translate(3%,-15%); }
+      50%  { transform:translate(12%,9%); }
+      70%  { transform:translate(9%,4%); }
+      90%  { transform:translate(-1%,7%); }
+    }
+
+    /* ─── Vignette ───────────────────────────── */
+    #vignette {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 190;
+      background:
+        radial-gradient(ellipse 18% 100% at 0% 50%, #001eaaaa 0%, transparent 100%),
+        radial-gradient(ellipse 18% 100% at 100% 50%, #001eaacc 0%, transparent 100%);
+    }
+
+    /* ─── Header ─────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 40px 60px 32px;
+      border-bottom: 1px solid #1a4fff40;
+      position: sticky;
+      top: 0;
+      background: #003fffee;
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+
+    .header-left h1 {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.4rem, 3vw, 2.4rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    .header-left p {
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: #6080cc;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /* Filter pills */
+    .filters {
+      display: flex;
+      gap: 6px;
+    }
+
+    .filter-btn {
+      background: none;
+      border: 1px solid #1a4fff60;
+      color: #ffffff;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: color .2s, border-color .2s, background .2s;
+      border-radius: 2px;
+    }
+    .filter-btn:hover,
+    .filter-btn.active {
+      color: #ffffff;
+      border-color: #c8dcff60;
+      background: #ffffff08;
+    }
+
+    /* Back link */
+    .back-link {
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      color: #ffffff;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .back-link:hover { color: #ffffff; }
+
+    /* ─── Main ───────────────────────────────── */
+    main {
+      padding: 48px 60px 80px;
+    }
+
+    /* Count */
+    #count {
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: #ffffff;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    /* ─── Masonry ────────────────────────────── */
+    #masonry {
+      columns: 4 200px;
+      column-gap: 8px;
+    }
+
+    .media-item {
+      break-inside: avoid;
+      margin-bottom: 8px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 3px;
+      cursor: pointer;
+      background: #001eaa40;
+      border: 1px solid #1a4fff30;
+      transition: border-color .25s, transform .25s;
+      display: block;
+    }
+    .media-item:hover {
+      border-color: #c8dcff40;
+      transform: translateY(-2px);
+    }
+
+    /* The actual image/video */
+    .media-item img,
+    .media-item video {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: opacity .6s ease;
+    }
+
+    /* Lazy load: start invisible */
+    .media-item img[data-src],
+    .media-item video[data-src] {
+      opacity: 0;
+    }
+    .media-item img.loaded,
+    .media-item video.loaded {
+      opacity: 1;
+    }
+
+    /* Skeleton while loading */
+    .media-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, #001eaa30 25%, #1a4fff20 50%, #001eaa30 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s linear infinite;
+      z-index: 0;
+      transition: opacity .4s;
+    }
+    .media-item.loaded::before {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Hover overlay */
+    .media-item .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, #001aaacc 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity .3s;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 12px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .media-item:hover .overlay { opacity: 1; }
+
+    .overlay-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+    .overlay-meta {
+      font-size: 8px;
+      letter-spacing: 0.3em;
+      color: #6080cccc;
+      text-transform: uppercase;
+    }
+
+    /* Video indicator */
+    .video-dot {
+      position: absolute;
+      top: 9px; right: 9px;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #c8dcff;
+      box-shadow: 0 0 10px #c8dcffaa;
+      animation: pulse 2s ease-in-out infinite;
+      z-index: 3;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .media-item:hover .video-dot,
+    .media-item.playing .video-dot { opacity: 1; }
+
+    @keyframes pulse {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(.7); opacity: .4; }
+    }
+
+    /* Play icon on video */
+    .play-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity .2s;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .media-item:hover .play-icon { opacity: 1; }
+    .media-item.playing .play-icon { opacity: 0; }
+
+    .play-circle {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid #c8dcff80;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+      background: #003fffaa;
+    }
+    .play-circle svg { width: 18px; height: 18px; fill: #ffffff; margin-left: 2px; }
+
+    /* ─── Login screen ──────────────────────── */
+    #login-screen {
+      position: fixed; inset: 0;
+      z-index: 50000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: opacity .8s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      /* deep near-black with a cool blue tint */
+      background: #070c1a;
+    }
+    #login-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Ambient light — top-left blue orb */
+    .ls-orb-1 {
+      position: absolute;
+      top: -15%; left: -8%;
+      width: 65%; height: 75%;
+      background: radial-gradient(ellipse, rgba(0,50,220,0.14) 0%, transparent 68%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* Ambient light — bottom-right violet orb */
+    .ls-orb-2 {
+      position: absolute;
+      bottom: -20%; right: -10%;
+      width: 60%; height: 70%;
+      background: radial-gradient(ellipse, rgba(40,20,180,0.10) 0%, transparent 68%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* Subtle centered glow behind card */
+    .ls-glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,63,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glass card */
+    .login-card {
+      position: relative; z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      background: rgba(255,255,255,0.038);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255,255,255,0.075);
+      border-radius: 18px;
+      padding: 52px 44px 44px;
+      box-shadow:
+        0 40px 100px rgba(0,0,0,0.55),
+        0 8px 28px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.07);
+      animation: cardIn .9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(22px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    /* Top shimmer line on card */
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 12%; right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* Brand */
+    .lc-brand {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.6em;
+      color: rgba(200,220,255,0.28);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      animation: fadeUp .7s .15s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Title */
+    .lc-title {
+      font-family: 'Unbounded', sans-serif;
+      font-weight: 900;
+      font-size: clamp(1.7rem, 4vw, 2.3rem);
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.93);
+      line-height: 1.1;
+      margin-bottom: 10px;
+      animation: fadeUp .7s .22s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Subtitle */
+    .lc-sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.45em;
+      color: rgba(200,220,255,0.28);
+      text-transform: uppercase;
+      margin-bottom: 36px;
+      animation: fadeUp .7s .28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Separator */
+    .lc-sep {
+      height: 1px;
+      background: rgba(255,255,255,0.055);
+      margin-bottom: 32px;
+      animation: fadeUp .7s .30s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Hint */
+    .lc-hint {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: rgba(200,220,255,0.32);
+      line-height: 1.9;
+      padding-left: 13px;
+      border-left: 1px solid rgba(200,220,255,0.12);
+      margin-bottom: 28px;
+      animation: fadeUp .7s .35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Input */
+    .login-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 9px;
+      color: rgba(255,255,255,0.88);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      padding: 14px 18px;
+      outline: none;
+      transition:
+        border-color .25s ease,
+        background .25s ease,
+        box-shadow .25s ease;
+      margin-bottom: 10px;
+      animation: fadeUp .7s .40s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .login-input::placeholder {
+      color: rgba(200,220,255,0.18);
+      letter-spacing: 0.35em;
+      font-size: 9px;
+    }
+    .login-input:hover {
+      border-color: rgba(255,255,255,0.13);
+      background: rgba(255,255,255,0.055);
+    }
+    .login-input:focus {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(200,220,255,0.32);
+      box-shadow:
+        0 0 0 3px rgba(200,220,255,0.05),
+        inset 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Error */
+    .login-error {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: rgba(255,100,100,0.8);
+      text-transform: uppercase;
+      min-height: 18px;
+      padding-left: 2px;
+      margin-bottom: 20px;
+    }
+
+    /* Button */
+    .login-btn {
+      width: 100%;
+      background: rgba(200,220,255,0.9);
+      border: none;
+      border-radius: 9px;
+      color: #06091a;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      padding: 15px;
+      cursor: pointer;
+      transition:
+        background .22s ease,
+        box-shadow .22s ease,
+        transform .15s ease;
+      box-shadow:
+        0 4px 18px rgba(180,205,255,0.18),
+        0 1px 4px rgba(0,0,0,0.4);
+      animation: fadeUp .7s .48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .login-btn:hover {
+      background: rgba(230,240,255,0.97);
+      box-shadow:
+        0 8px 30px rgba(180,205,255,0.28),
+        0 2px 8px rgba(0,0,0,0.4);
+      transform: translateY(-1px);
+    }
+    .login-btn:active { transform: translateY(0); }
+
+    /* Back link */
+    .lc-back {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      color: rgba(80,220,180,0.55);
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 12px 20px;
+      border: 1px solid rgba(80,220,180,0.22);
+      border-radius: 40px;
+      background: rgba(80,220,180,0.04);
+      transition: color .25s ease, border-color .25s ease, background .25s ease, box-shadow .25s ease;
+      animation: fadeUp .7s .55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .lc-back:hover {
+      color: rgba(100,240,200,0.9);
+      border-color: rgba(80,220,180,0.5);
+      background: rgba(80,220,180,0.07);
+      box-shadow: 0 0 18px rgba(80,220,180,0.1);
+    }
+
+    /* Shared stagger animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Gallery wrapper ────────────────────── */
+    #gallery-wrapper {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .5s ease;
+    }
+    #gallery-wrapper.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .logout-btn {
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      color: #ff0000;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      font-family: 'Space Mono', monospace;
+      cursor: pointer;
+      transition: color .2s;
+    }
+    .logout-btn:hover { color: #ffffff; }
+
+    /* ─── Lightbox ───────────────────────────── */
+    #lightbox {
+      position: fixed; inset: 0;
+      background: rgba(0, 10, 60, .96);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+    #lightbox.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #lb-media {
+      max-width: 90vw;
+      max-height: 85vh;
+      position: relative;
+      transform: scale(.97);
+      transition: transform .3s ease;
+    }
+    #lightbox.open #lb-media { transform: scale(1); }
+
+    #lb-media img,
+    #lb-media video {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: 3px;
+      display: block;
+      object-fit: contain;
+    }
+
+    /* Counter */
+    #lb-counter {
+      position: fixed;
+      top: 28px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: #ffffff;
+      text-transform: uppercase;
+      z-index: 10;
+    }
+
+    /* Close */
+    #lb-close {
+      position: fixed;
+      top: 24px; right: 32px;
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      color: #ffffff;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: 'Space Mono', monospace;
+      transition: color .2s;
+      z-index: 10;
+    }
+    #lb-close:hover { color: #c8dcff; }
+
+    /* Prev / Next */
+    #lb-prev, #lb-next {
+      position: fixed;
+      top: 50%; transform: translateY(-50%);
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      color: #6080cc;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: 'Space Mono', monospace;
+      transition: color .2s;
+      z-index: 10;
+    }
+    #lb-prev { left: 32px; }
+    #lb-next { right: 32px; }
+    #lb-prev:hover, #lb-next:hover { color: #ffffff; }
+    #lb-prev:disabled, #lb-next:disabled { opacity: .2; cursor: default; }
+
+    /* Caption */
+    #lb-caption {
+      position: fixed;
+      bottom: 28px; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      background: #001aaacc;
+      border: 1px solid #c8dcff15;
+      padding: 10px 20px;
+      border-radius: 2px;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: #ffffff;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    #lb-caption span.title { color: #c8dcff; font-family: 'Unbounded', sans-serif; font-size: 10px; font-weight: 900; letter-spacing: -.01em; }
+
+    /* ─── Empty state ────────────────────────── */
+    #empty {
+      display: none;
+      text-align: center;
+      padding: 80px 0;
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: #2a4a8a;
+      text-transform: uppercase;
+    }
+
+    /* ─── Responsive ─────────────────────────── */
+    @media (max-width: 900px) {
+      header { padding: 28px 28px 20px; }
+      main   { padding: 32px 28px 60px; }
+      #masonry { columns: 2 150px; }
+    }
+    @media (max-width: 520px) {
+      header { padding: 20px 20px 16px; gap: 12px; }
+      main   { padding: 24px 16px 60px; }
+      #masonry { columns: 2 120px; column-gap: 6px; }
+      .media-item { margin-bottom: 6px; }
+      .filters { gap: 4px; }
+      .filter-btn { padding: 5px 10px; font-size: 8px; }
+      #lb-prev { left: 12px; }
+      #lb-next { right: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="grain"></div>
+<div id="vignette"></div>
+
+<!-- ─── Login ───────────────────────────────── -->
+<div id="login-screen">
+
+  <!-- Ambient lighting layers -->
+  <div class="ls-orb-1"></div>
+  <div class="ls-orb-2"></div>
+  <div class="ls-glow"></div>
+
+  <!-- Glass card -->
+  <div class="login-card">
+    <p class="lc-brand">MAXANS.IO</p>
+    <h1 class="lc-title">Photothèque</h1>
+    <p class="lc-sub">Espace privé</p>
+    <div class="lc-sep"></div>
+    <p class="lc-hint">Indice : Département où j'ai grandi<br>pendant 4 ans.</p>
+    <input
+      type="password"
+      id="login-password"
+      class="login-input"
+      placeholder="MOT DE PASSE"
+      autocomplete="off"
+    />
+    <p class="login-error" id="login-error"></p>
+    <button class="login-btn" id="login-btn">Entrer →</button>
+    <a href="index.html" class="lc-back">← Retour à l'accueil</a>
+  </div>
+
+</div>
+
+<!-- ─── Galerie ──────────────────────────────── -->
+<div id="gallery-wrapper">
+
+<!-- ─── Header ──────────────────────────────── -->
+<header>
+  <div class="header-left">
+    <h1>Photothèque</h1>
+    <p id="count">0 médias</p>
+  </div>
+  <div class="header-right">
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">Tout</button>
+      <button class="filter-btn" data-filter="image">Photos</button>
+      <button class="filter-btn" data-filter="video">Vidéos</button>
+    </div>
+    <a href="index.html" class="back-link">← Accueil</a>
+    <button class="logout-btn" id="logout-btn">Déconnexion</button>
+  </div>
+</header>
+
+<!-- ─── Grid ────────────────────────────────── -->
+<main>
+  <div id="masonry"></div>
+  <p id="empty">Aucun média</p>
+</main>
+</div><!-- fin #gallery-wrapper -->
+
+<!-- ─── Lightbox ────────────────────────────── -->
+<div id="lightbox">
+  <div id="lb-counter"></div>
+  <button id="lb-close">[ ESC ]</button>
+  <button id="lb-prev">← Préc</button>
+  <div id="lb-media"></div>
+  <button id="lb-next">Suiv →</button>
+  <div id="lb-caption">
+    <span class="title" id="lb-title"></span>
+    <span id="lb-loc"></span>
+    <span id="lb-date"></span>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   MÉDIAS — ajoute tes propres fichiers ici
+   ─────────────────────────────────────────────
+   type      : 'image' ou 'video'
+   src       : URL de l'image ou de la vidéo
+   thumb     : (vidéo uniquement) URL de la miniature
+   title     : titre affiché au survol / dans la lightbox
+   location  : lieu (optionnel)
+   date      : date (optionnel)
+═══════════════════════════════════════════════ */
+const MEDIA = [
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+    title: 'Alpes',
+    location: 'France',
+    date: '2024'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600',
+    title: 'Montagne',
+    location: 'Suisse',
+    date: '2024'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800',
+    title: 'Lac',
+    location: 'Norvège',
+    date: '2023'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1682685797507-d44d838b0ac5?w=500',
+    title: 'Portrait',
+    date: '2024'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1518791841217-8f162f1912da?w=600',
+    title: 'Argentique',
+    date: '2023'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1531804055935-76f44d7c3621?w=800',
+    title: 'Nuit',
+    location: 'Nice',
+    date: '2024'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=700',
+    title: 'Route',
+    location: 'Californie',
+    date: '2023'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=600',
+    title: 'Neige',
+    location: 'Alpes',
+    date: '2024'
+  },
+  {
+    type: 'video',
+    src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    thumb: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600',
+    title: 'Forêt',
+    location: 'Vosges',
+    date: '2024'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=500',
+    title: 'Mer',
+    location: 'Marseille',
+    date: '2024'
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1511300636408-a63a89df3482?w=700',
+    title: 'Coucher de soleil',
+    date: '2023'
+  },
+  {
+    type: 'image',
+    src: 'https://res.cloudinary.com/daxyhq4jg/image/upload/v1778707028/samples/zoom.avif',
+    title: 'Ville',
+    location: 'Paris',
+    date: '2024'
+  },
+];
+
+/* ═══════════════════════════════════════════════
+   CODE — ne pas modifier
+═══════════════════════════════════════════════ */
+
+let activeFilter  = 'all';
+let filteredMedia = [];
+let lbIndex       = 0;
+let lbOpen        = false;
+
+const masonry  = document.getElementById('masonry');
+const lightbox = document.getElementById('lightbox');
+const lbMedia  = document.getElementById('lb-media');
+const lbTitle  = document.getElementById('lb-title');
+const lbLoc    = document.getElementById('lb-loc');
+const lbDate   = document.getElementById('lb-date');
+const lbCount  = document.getElementById('lb-counter');
+const empty    = document.getElementById('empty');
+
+/* ── Render grid ──────────────────────────── */
+function render() {
+  filteredMedia = activeFilter === 'all'
+    ? MEDIA
+    : MEDIA.filter(m => m.type === activeFilter);
+
+  masonry.innerHTML = '';
+  empty.style.display = filteredMedia.length === 0 ? 'block' : 'none';
+
+  document.getElementById('count').textContent =
+    filteredMedia.length + ' média' + (filteredMedia.length > 1 ? 's' : '');
+
+  filteredMedia.forEach((m, i) => {
+    const item = document.createElement('div');
+    item.className = 'media-item';
+    item.dataset.index = i;
+
+    if (m.type === 'image') {
+      const img = document.createElement('img');
+      img.dataset.src = m.src;
+      img.alt = m.title || '';
+      img.style.opacity = '0';
+      item.appendChild(img);
+    } else {
+      // Video
+      const vid = document.createElement('video');
+      vid.dataset.src = m.src;
+      if (m.thumb) vid.poster = m.thumb;
+      vid.muted = true;
+      vid.loop  = true;
+      vid.playsInline = true;
+      vid.style.opacity = '0';
+      item.appendChild(vid);
+
+      // Video dot + play icon
+      const dot = document.createElement('div');
+      dot.className = 'video-dot';
+      item.appendChild(dot);
+
+      const playIcon = document.createElement('div');
+      playIcon.className = 'play-icon';
+      playIcon.innerHTML = '<div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>';
+      item.appendChild(playIcon);
+    }
+
+    // Overlay
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML =
+      (m.title ? `<div class="overlay-title">${m.title}</div>` : '') +
+      (m.location || m.date ? `<div class="overlay-meta">${[m.location, m.date].filter(Boolean).join(' · ')}</div>` : '');
+    item.appendChild(ov);
+
+    item.addEventListener('click', () => openLightbox(i));
+    masonry.appendChild(item);
+  });
+
+  // Lazy load after render
+  observeItems();
+}
+
+/* ── Lazy loading ─────────────────────────── */
+function observeItems() {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const item = entry.target;
+      const el   = item.querySelector('img, video');
+      if (!el || !el.dataset.src) return;
+
+      if (el.tagName === 'IMG') {
+        el.src = el.dataset.src;
+        delete el.dataset.src;
+        el.addEventListener('load', () => {
+          el.style.opacity = '1';
+          el.classList.add('loaded');
+          item.classList.add('loaded');
+        }, { once: true });
+      } else {
+        el.src = el.dataset.src;
+        delete el.dataset.src;
+        el.style.opacity = '1';
+        el.classList.add('loaded');
+        item.classList.add('loaded');
+      }
+      io.unobserve(item);
+    });
+  }, { rootMargin: '300px' });
+
+  document.querySelectorAll('.media-item').forEach(item => io.observe(item));
+}
+
+/* ── Video autoplay on visibility ─────────── */
+const videoIO = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const vid = entry.target.querySelector('video');
+    if (!vid || vid.dataset.src) return; // not loaded yet
+    if (entry.isIntersecting) {
+      vid.play().catch(() => {});
+      entry.target.classList.add('playing');
+    } else {
+      vid.pause();
+      entry.target.classList.remove('playing');
+    }
+  });
+}, { threshold: 0.3 });
+
+// Re-observe after render
+function observeVideos() {
+  document.querySelectorAll('.media-item').forEach(item => {
+    if (item.querySelector('video')) videoIO.observe(item);
+  });
+}
+
+/* ── Lightbox ─────────────────────────────── */
+function openLightbox(index) {
+  lbIndex = index;
+  lbOpen  = true;
+  lightbox.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  showMedia(index);
+}
+
+function closeLightbox() {
+  lbOpen = false;
+  lightbox.classList.remove('open');
+  document.body.style.overflow = '';
+  // Pause any playing video in lightbox
+  const vid = lbMedia.querySelector('video');
+  if (vid) vid.pause();
+}
+
+function showMedia(index) {
+  lbIndex = index;
+  const m = filteredMedia[index];
+  if (!m) return;
+
+  lbMedia.innerHTML = '';
+
+  if (m.type === 'image') {
+    const img = document.createElement('img');
+    img.src = m.src;
+    img.alt = m.title || '';
+    lbMedia.appendChild(img);
+  } else {
+    const vid = document.createElement('video');
+    vid.src = m.src;
+    if (m.thumb) vid.poster = m.thumb;
+    vid.controls = true;
+    vid.autoplay = true;
+    vid.loop     = true;
+    vid.playsInline = true;
+    lbMedia.appendChild(vid);
+  }
+
+  lbTitle.textContent = m.title    || '';
+  lbLoc.textContent   = m.location || '';
+  lbDate.textContent  = m.date     || '';
+  lbCount.textContent =
+    String(index + 1).padStart(3, '0') + ' / ' + String(filteredMedia.length).padStart(3, '0');
+
+  document.getElementById('lb-prev').disabled = index === 0;
+  document.getElementById('lb-next').disabled = index === filteredMedia.length - 1;
+}
+
+/* ── Events ───────────────────────────────── */
+
+// Filters
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    render();
+    observeVideos();
+  });
+});
+
+// Lightbox controls
+document.getElementById('lb-close').addEventListener('click', closeLightbox);
+document.getElementById('lb-prev').addEventListener('click', () => {
+  if (lbIndex > 0) showMedia(lbIndex - 1);
+});
+document.getElementById('lb-next').addEventListener('click', () => {
+  if (lbIndex < filteredMedia.length - 1) showMedia(lbIndex + 1);
+});
+
+// Click outside media to close
+lightbox.addEventListener('click', e => {
+  if (e.target === lightbox) closeLightbox();
+});
+
+// Keyboard
+window.addEventListener('keydown', e => {
+  if (!lbOpen) return;
+  if (e.key === 'Escape')      closeLightbox();
+  if (e.key === 'ArrowRight')  { if (lbIndex < filteredMedia.length - 1) showMedia(lbIndex + 1); }
+  if (e.key === 'ArrowLeft')   { if (lbIndex > 0) showMedia(lbIndex - 1); }
+});
+
+// Touch swipe in lightbox
+let touchX = 0;
+lightbox.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+lightbox.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) < 50) return;
+  if (dx < 0 && lbIndex < filteredMedia.length - 1) showMedia(lbIndex + 1);
+  if (dx > 0 && lbIndex > 0) showMedia(lbIndex - 1);
+});
+
+/* ── Auth ─────────────────────────────────── */
+const MOT_DE_PASSE = 'Martinique'; /* frero je sais pas pourquoi tu regarde ici , oui je sais que c'est pourri le systeme d'authentification
+mais bon au moins ca élimine les 2 de qi essayant de me stalk ( bro prend la confiance ) mais prem deg arrete de me stalk*/
+
+const loginScreen = document.getElementById('login-screen');
+const galleryEl   = document.getElementById('gallery-wrapper');
+const loginBtn    = document.getElementById('login-btn');
+const loginError  = document.getElementById('login-error');
+
+function showGallery() {
+  loginScreen.classList.add('hidden');
+  galleryEl.classList.add('visible');
+  render();
+  observeVideos();
+}
+
+// Rester connecté pendant la session du navigateur
+if (sessionStorage.getItem('auth') === 'ok') showGallery();
+
+function doLogin() {
+  const val = document.getElementById('login-password').value;
+  if (val === MOT_DE_PASSE) {
+    sessionStorage.setItem('auth', 'ok');
+    showGallery();
+  } else {
+    loginError.textContent = 'Mot de passe incorrect gros Neuille.';
+    document.getElementById('login-password').value = '';
+  }
+}
+
+loginBtn.addEventListener('click', doLogin);
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('logout-btn').addEventListener('click', () => {
+  sessionStorage.removeItem('auth');
+  location.reload();
+});
+
+/* ── Init ─────────────────────────────────── */
+// render() et observeVideos() sont appelés par showGallery() au login
+</script>
+</body>
+</html>
