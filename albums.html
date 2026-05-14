@@ -260,6 +260,54 @@
       z-index: 600;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #hint-popup {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #001680ee;
+  border: 1px solid #c8dcff20;
+  backdrop-filter: blur(10px);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+  z-index: 700;
+  white-space: nowrap;
+}
+#hint-popup.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: all;
+}
+#hint-popup .hp-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid #c8dcff40;
+  display: flex; align-items: center; justify-content: center;
+}
+#hint-popup .hp-icon svg { width: 12px; height: 12px; fill: #c8dcff; }
+#hint-popup .hp-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #6080cc;
+}
+#hint-popup .hp-close {
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: #2a4a8a;
+  font-size: 16px;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+#hint-popup .hp-close:hover { color: #c8dcff; }
   </style>
 </head>
 <body>
@@ -788,7 +836,28 @@ ALBUMS.forEach(album => {
 });
 
 document.getElementById('pb-stop').addEventListener('click', stopCurrent);
-</script>
+// Popup — à coller tout à la fin du script
+window.addEventListener('DOMContentLoaded', () => {
+  const popup = document.getElementById('hint-popup');
+  const closeBtn = document.getElementById('hp-close');
 
+  if (!popup || !closeBtn) return;
+
+  setTimeout(() => popup.classList.add('show'), 600);
+
+  closeBtn.addEventListener('click', () => popup.classList.remove('show'));
+
+  document.getElementById('grid').addEventListener('click', () => {
+    popup.classList.remove('show');
+  }, { once: true });
+});
+</script>
+<div id="hint-popup">
+  <div class="hp-icon">
+    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+  </div>
+  <span class="hp-text">Appuie sur un album pour écouter un extrait</span>
+  <span class="hp-close" id="hp-close">×</span>
+</div>
 </body>
 </html>
