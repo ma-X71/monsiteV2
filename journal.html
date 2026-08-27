@@ -68,7 +68,7 @@
     .entry {
       position: relative;
       background: #ffffff08;
-      border: 1px solid #ffffff10;
+      border: 1px solid #ffffff35;
       border-radius: 3px;
       padding: 22px 26px 26px;
       margin-bottom: 28px;
@@ -78,7 +78,7 @@
     .entry-date {
       font-size: 9px;
       letter-spacing: 0.4em;
-      color: #6080cc;
+      color: #ffffff;
       text-transform: uppercase;
       margin-bottom: 14px;
     }
@@ -180,7 +180,7 @@ async function load() {
       </div>
     `).join('');
   } catch (e) {
-    countEl.textContent = 'erreur de chargement';
+    countEl.textContent = 'erreur de chargement ( active ta 4g peut être)';
   }
 }
 
