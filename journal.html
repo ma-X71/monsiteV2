@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal</title>
+  <link rel="icon" type="image/gif" href="assetsmain/kone01.gif">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background: #003fff;
+      color: #c8dcff;
+      font-family: 'Space Mono', monospace;
+    }
+
+    #vignette {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 190;
+      background:
+        radial-gradient(ellipse 18% 100% at 0% 50%, #001eaaaa 0%, transparent 100%),
+        radial-gradient(ellipse 18% 100% at 100% 50%, #001eaaaa 0%, transparent 100%);
+    }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 40px 60px 32px;
+      border-bottom: 1px solid #1a4fff40;
+    }
+    header h1 {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.4rem, 3vw, 2.8rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #c8dcff;
+      line-height: 1;
+    }
+    .back-link {
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      color: #ffffff;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 56px 24px 100px;
+    }
+
+    #count {
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: #6080cc;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+
+    /* ─── Entrée ─── */
+    .entry {
+      position: relative;
+      background: #ffffff08;
+      border: 1px solid #ffffff10;
+      border-radius: 3px;
+      padding: 22px 26px 26px;
+      margin-bottom: 28px;
+    }
+    .entry + .entry { border-top: none; }
+
+    .entry-date {
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      color: #6080cc;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .entry-sep {
+      width: 100%;
+      height: 1px;
+      background: #ffffff1a;
+      margin-bottom: 16px;
+    }
+
+    .entry-content {
+      font-size: 14px;
+      line-height: 1.9;
+      color: #ffffff;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    #empty {
+      display: none;
+      text-align: center;
+      padding: 80px 0;
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: #6080cc;
+      text-transform: uppercase;
+    }
+
+    #admin-link {
+      position: fixed;
+      bottom: 20px; right: 24px;
+      font-size: 8px;
+      letter-spacing: 0.35em;
+      color: #1a4fff70;
+      text-transform: uppercase;
+      text-decoration: none;
+      z-index: 400;
+      transition: color .2s;
+    }
+    #admin-link:hover { color: #6080cc; }
+
+    @media (max-width: 600px) {
+      header { padding: 28px 24px 20px; }
+      main { padding: 40px 16px 90px; }
+      .entry { padding: 18px 18px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="vignette"></div>
+
+<header>
+  <h1>Journal</h1>
+  <a href="index.html" class="back-link">← Accueil</a>
+</header>
+
+<main>
+  <p id="count">chargement…</p>
+  <div id="entries"></div>
+  <p id="empty">Rien pour l'instant</p>
+</main>
+
+<a href="journal-admin.html" id="admin-link">·</a>
+
+<script>
+function formatDate(iso) {
+  const d = new Date(iso);
+  const jours = ['dim','lun','mar','mer','jeu','ven','sam'];
+  const mois  = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()} — ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function load() {
+  const countEl   = document.getElementById('count');
+  const entriesEl = document.getElementById('entries');
+  const emptyEl   = document.getElementById('empty');
+
+  try {
+    const res  = await fetch('/api/journal-entries');
+    const data = await res.json();
+    const entries = data.entries || [];
+
+    countEl.textContent = entries.length + ' entrée' + (entries.length > 1 ? 's' : '');
+    emptyEl.style.display = entries.length === 0 ? 'block' : 'none';
+
+    entriesEl.innerHTML = entries.map(e => `
+      <div class="entry">
+        <div class="entry-date">${formatDate(e.created_at)}</div>
+        <div class="entry-sep"></div>
+        <div class="entry-content">${escapeHTML(e.content)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    countEl.textContent = 'erreur de chargement';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

@@ -263,8 +263,9 @@
     #hint-popup {
   position: fixed;
   bottom: 36px;
-  left: 50%;
-  transform: translateX(-50%) translateY(16px);
+  left: 60px;
+  right: 60px;
+  transform: translateY(16px);
   background: #001680ee;
   border: 1px solid #c8dcff20;
   backdrop-filter: blur(10px);
@@ -277,11 +278,10 @@
   transition: opacity 0.5s ease, transform 0.5s ease;
   pointer-events: none;
   z-index: 700;
-  white-space: nowrap;
 }
 #hint-popup.show {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
   pointer-events: all;
 }
 #hint-popup .hp-icon {

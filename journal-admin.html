@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Journal — Admin</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#003fff">
+  <link rel="apple-touch-icon" href="icons/journal-icon-192.png">
+  <link rel="icon" type="image/png" href="icons/journal-icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; min-height: 100%;
+      background: #003fff; color: #ffffff;
+      font-family: 'Space Mono', monospace;
+    }
+
+    #vignette {
+      position: fixed; inset: 0; pointer-events: none; z-index: 190;
+      background: radial-gradient(ellipse 18% 100% at 0% 50%, #001eaaaa 0%, transparent 100%),
+                  radial-gradient(ellipse 18% 100% at 100% 50%, #001eaacc 0%, transparent 100%);
+    }
+
+    /* ─── Login ─── */
+    #login-screen {
+      position: fixed; inset: 0; z-index: 5000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; background: #070c1a;
+      transition: opacity .6s ease;
+    }
+    #login-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .login-card {
+      position: relative; width: 100%; max-width: 380px;
+      background: rgba(255,255,255,0.038);
+      backdrop-filter: blur(28px);
+      border: 1px solid rgba(255,255,255,0.075);
+      border-radius: 18px;
+      padding: 48px 40px 40px;
+      box-shadow: 0 40px 100px rgba(0,0,0,.55);
+    }
+    .lc-brand { font-size: 8px; letter-spacing: .6em; color: rgba(200,220,255,.28); text-transform: uppercase; margin-bottom: 28px; }
+    .lc-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: clamp(1.5rem,4vw,2rem); letter-spacing: -.03em; color: rgba(255,255,255,.93); margin-bottom: 30px; }
+    .login-input {
+      width: 100%; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 9px; color: rgba(255,255,255,.88); font-family: 'Space Mono', monospace;
+      font-size: 12px; letter-spacing: .18em; padding: 14px 18px; outline: none; margin-bottom: 10px;
+      transition: border-color .25s, background .25s;
+    }
+    .login-input::placeholder { color: rgba(200,220,255,.18); letter-spacing: .35em; font-size: 9px; }
+    .login-input:focus { background: rgba(255,255,255,.06); border-color: rgba(200,220,255,.32); }
+    .login-error { font-size: 9px; letter-spacing: .3em; color: rgba(255,100,100,.8); text-transform: uppercase; min-height: 18px; margin-bottom: 18px; }
+    .login-btn {
+      width: 100%; background: rgba(200,220,255,.9); border: none; border-radius: 9px;
+      color: #06091a; font-size: 10px; font-weight: 700; letter-spacing: .42em; text-transform: uppercase;
+      padding: 15px; cursor: pointer; transition: background .2s, opacity .2s;
+    }
+    .login-btn:hover:not(:disabled) { background: rgba(230,240,255,.97); }
+    .login-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .lc-back { display: block; text-align: center; margin-top: 18px; font-size: 9px; letter-spacing: .4em; color: rgba(200,220,255,.4); text-decoration: none; text-transform: uppercase; }
+
+    /* ─── App ─── */
+    #app { opacity: 0; pointer-events: none; transition: opacity .4s ease; padding-bottom: 60px; }
+    #app.visible { opacity: 1; pointer-events: all; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      padding: 28px 24px 20px; border-bottom: 1px solid #1a4fff40;
+    }
+    header h1 { font-family: 'Unbounded', sans-serif; font-size: clamp(1.2rem,3vw,1.8rem); font-weight: 900; letter-spacing: -.03em; }
+    .hdr-links { display: flex; gap: 16px; align-items: center; }
+    .hdr-links a, .hdr-links button {
+      background: none; border: none; font-family: 'Space Mono', monospace;
+      font-size: 9px; letter-spacing: .35em; text-transform: uppercase; color: #ffffff;
+      text-decoration: none; cursor: pointer;
+    }
+    .hdr-links button { color: #ff9a9a; }
+
+    main { max-width: 640px; margin: 0 auto; padding: 28px 20px 40px; }
+
+    /* ─── New entry form ─── */
+    #new-entry {
+      background: #ffffff08; border: 1px solid #ffffff10; border-radius: 4px;
+      padding: 18px; margin-bottom: 40px;
+    }
+    #new-entry textarea {
+      width: 100%; min-height: 100px; resize: vertical;
+      background: transparent; border: none; outline: none;
+      color: #ffffff; font-family: 'Space Mono', monospace; font-size: 14px; line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    #new-entry textarea::placeholder { color: #ffffff50; }
+
+    .form-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    .toggle {
+      display: flex; border: 1px solid #ffffff20; border-radius: 20px; overflow: hidden;
+    }
+    .toggle button {
+      background: none; border: none; padding: 7px 16px; font-family: 'Space Mono', monospace;
+      font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: #ffffff70; cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .toggle button.active { background: #c8dcff; color: #06091a; }
+
+    #submit-entry {
+      background: #c8dcff; border: none; border-radius: 20px; color: #06091a;
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .3em;
+      text-transform: uppercase; padding: 10px 22px; cursor: pointer; transition: opacity .2s;
+    }
+    #submit-entry:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ─── List ─── */
+    #list-count { font-size: 9px; letter-spacing: .5em; color: #6080cc; text-transform: uppercase; margin-bottom: 20px; }
+
+    .entry {
+      background: #ffffff08; border: 1px solid #ffffff10; border-radius: 3px;
+      padding: 18px 20px 20px; margin-bottom: 18px;
+    }
+    .entry-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .entry-date { font-size: 9px; letter-spacing: .3em; color: #6080cc; text-transform: uppercase; }
+    .entry-badge {
+      font-size: 8px; letter-spacing: .3em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
+    }
+    .entry-badge.public { color: #8affb0; border: 1px solid #8affb050; }
+    .entry-badge.private { color: #ffcf8a; border: 1px solid #ffcf8a50; }
+
+    .entry-sep { width: 100%; height: 1px; background: #ffffff1a; margin-bottom: 14px; }
+
+    .entry-content { font-size: 14px; line-height: 1.8; color: #ffffff; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 14px; }
+    .entry-edit-area {
+      width: 100%; min-height: 90px; background: #ffffff0a; border: 1px solid #ffffff20; border-radius: 3px;
+      color: #ffffff; font-family: 'Space Mono', monospace; font-size: 14px; line-height: 1.7; padding: 10px;
+      margin-bottom: 12px; display: none;
+    }
+
+    .entry-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .entry-actions button, .entry-actions a {
+      background: none; border: none; font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: .3em; text-transform: uppercase; cursor: pointer; padding: 0;
+    }
+    .btn-edit   { color: #ffffff; }
+    .btn-delete { color: #ff9a9a; }
+    .btn-save   { color: #8affb0; }
+    .btn-cancel { color: #ffffff70; }
+
+    #empty { display: none; text-align: center; padding: 60px 0; font-size: 9px; letter-spacing: .5em; color: #6080cc; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+<div id="vignette"></div>
+
+<div id="login-screen">
+  <div class="login-card">
+    <p class="lc-brand">MAXANS.FR</p>
+    <h1 class="lc-title">Journal — Admin</h1>
+    <input type="password" id="login-password" class="login-input" placeholder="CODE ADMIN" autocomplete="off">
+    <p class="login-error" id="login-error"></p>
+    <button class="login-btn" id="login-btn">Entrer →</button>
+    <a href="journal.html" class="lc-back">← Voir la version publique</a>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <h1>Journal — Admin</h1>
+    <div class="hdr-links">
+      <a href="journal.html">Version publique</a>
+      <button id="logout-btn">Déconnexion</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="new-entry">
+      <textarea id="new-content" placeholder="À quoi tu penses aujourd'hui ?"></textarea>
+      <div class="form-row">
+        <div class="toggle">
+          <button type="button" id="toggle-private" class="active">Privé</button>
+          <button type="button" id="toggle-public">Public</button>
+        </div>
+        <button id="submit-entry">Ajouter</button>
+      </div>
+    </div>
+
+    <p id="list-count">chargement…</p>
+    <div id="list"></div>
+    <p id="empty">Aucune entrée pour l'instant</p>
+  </main>
+</div>
+
+<script>
+const TOKEN_KEY = 'maxans_journal_token';
+let isPublicNew = false;
+let entries = [];
+
+const loginScreen = document.getElementById('login-screen');
+const appEl        = document.getElementById('app');
+const loginBtn      = document.getElementById('login-btn');
+const loginInput    = document.getElementById('login-password');
+const loginError    = document.getElementById('login-error');
+
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+async function checkStoredToken() {
+  const token = getToken();
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/journal-verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+    const data = await res.json();
+    if (data.valid) showApp(); else localStorage.removeItem(TOKEN_KEY);
+  } catch {}
+}
+
+async function doLogin() {
+  const password = loginInput.value.trim();
+  if (!password) return;
+  loginBtn.disabled = true; loginBtn.textContent = '...'; loginError.textContent = '';
+
+  try {
+    const res  = await fetch('/api/journal-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      showApp();
+    } else {
+      loginError.textContent = data.error || 'Code incorrect';
+      loginInput.value = ''; loginInput.focus();
+    }
+  } catch {
+    loginError.textContent = 'Erreur réseau';
+  } finally {
+    loginBtn.disabled = false; loginBtn.textContent = 'Entrer →';
+  }
+}
+
+loginBtn.addEventListener('click', doLogin);
+loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem(TOKEN_KEY);
+  location.reload();
+});
+
+function showApp() {
+  loginScreen.classList.add('hidden');
+  appEl.classList.add('visible');
+  loadEntries();
+}
+
+checkStoredToken();
+
+/* ─── Formatting ─── */
+function formatDate(iso) {
+  const d = new Date(iso);
+  const jours = ['dim','lun','mar','mer','jeu','ven','sam'];
+  const mois  = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()} — ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ─── New entry toggle ─── */
+const togglePrivate = document.getElementById('toggle-private');
+const togglePublic  = document.getElementById('toggle-public');
+togglePrivate.addEventListener('click', () => { isPublicNew = false; togglePrivate.classList.add('active'); togglePublic.classList.remove('active'); });
+togglePublic.addEventListener('click',  () => { isPublicNew = true;  togglePublic.classList.add('active');  togglePrivate.classList.remove('active'); });
+
+document.getElementById('submit-entry').addEventListener('click', async () => {
+  const textarea = document.getElementById('new-content');
+  const content = textarea.value.trim();
+  if (!content) return;
+
+  const btn = document.getElementById('submit-entry');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/journal-entries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+      body: JSON.stringify({ content, is_public: isPublicNew })
+    });
+    if (!res.ok) throw new Error();
+    textarea.value = '';
+    await loadEntries();
+  } catch {
+    alert("Erreur lors de l'ajout");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ─── List ─── */
+async function loadEntries() {
+  const listCount = document.getElementById('list-count');
+  const listEl    = document.getElementById('list');
+  const emptyEl   = document.getElementById('empty');
+
+  try {
+    const res  = await fetch('/api/journal-entries', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    const data = await res.json();
+    entries = data.entries || [];
+
+    listCount.textContent = entries.length + ' entrée' + (entries.length > 1 ? 's' : '');
+    emptyEl.style.display = entries.length === 0 ? 'block' : 'none';
+
+    listEl.innerHTML = entries.map(e => `
+      <div class="entry" data-id="${e.id}">
+        <div class="entry-top">
+          <div class="entry-date">${formatDate(e.created_at)}</div>
+          <div class="entry-badge ${e.is_public ? 'public' : 'private'}">${e.is_public ? 'Public' : 'Privé'}</div>
+        </div>
+        <div class="entry-sep"></div>
+        <div class="entry-content">${escapeHTML(e.content)}</div>
+        <textarea class="entry-edit-area">${escapeHTML(e.content)}</textarea>
+        <div class="entry-actions">
+          <button class="btn-edit">Modifier</button>
+          <button class="btn-toggle-vis" style="display:none">Rendre ${e.is_public ? 'privé' : 'public'}</button>
+          <button class="btn-save" style="display:none">Enregistrer</button>
+          <button class="btn-cancel" style="display:none">Annuler</button>
+          <button class="btn-delete">Supprimer</button>
+        </div>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.entry').forEach(el => bindEntryActions(el));
+  } catch {
+    listCount.textContent = 'erreur de chargement';
+  }
+}
+
+function bindEntryActions(el) {
+  const id       = el.dataset.id;
+  const contentEl = el.querySelector('.entry-content');
+  const editArea  = el.querySelector('.entry-edit-area');
+  const btnEdit   = el.querySelector('.btn-edit');
+  const btnToggle = el.querySelector('.btn-toggle-vis');
+  const btnSave   = el.querySelector('.btn-save');
+  const btnCancel = el.querySelector('.btn-cancel');
+  const btnDelete = el.querySelector('.btn-delete');
+  const badge     = el.querySelector('.entry-badge');
+  const originalIsPublic = badge.classList.contains('public');
+
+  function refreshBadge() {
+    const isPublic = badge.classList.contains('public');
+    badge.textContent = isPublic ? 'Public' : 'Privé';
+    btnToggle.textContent = 'Rendre ' + (isPublic ? 'privé' : 'public');
+  }
+
+  btnEdit.addEventListener('click', () => {
+    contentEl.style.display = 'none';
+    editArea.style.display  = 'block';
+    btnEdit.style.display   = 'none';
+    btnToggle.style.display = 'inline';
+    btnSave.style.display   = 'inline';
+    btnCancel.style.display = 'inline';
+  });
+
+  btnToggle.addEventListener('click', () => {
+    badge.classList.toggle('public');
+    badge.classList.toggle('private');
+    refreshBadge();
+  });
+
+  btnCancel.addEventListener('click', () => {
+    editArea.value = contentEl.textContent;
+    badge.classList.toggle('public', originalIsPublic);
+    badge.classList.toggle('private', !originalIsPublic);
+    refreshBadge();
+    contentEl.style.display = 'block';
+    editArea.style.display  = 'none';
+    btnEdit.style.display   = 'inline';
+    btnToggle.style.display = 'none';
+    btnSave.style.display   = 'none';
+    btnCancel.style.display = 'none';
+  });
+
+  btnSave.addEventListener('click', async () => {
+    const newContent = editArea.value.trim();
+    if (!newContent) return;
+    const isPublic = badge.classList.contains('public');
+
+    btnSave.disabled = true;
+    try {
+      const res = await fetch('/api/journal-entries', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ id, content: newContent, is_public: isPublic })
+      });
+      if (!res.ok) throw new Error();
+      await loadEntries();
+    } catch {
+      alert('Erreur lors de la modification');
+      btnSave.disabled = false;
+    }
+  });
+
+  btnDelete.addEventListener('click', async () => {
+    if (!confirm('Supprimer cette entrée ?')) return;
+    try {
+      const res = await fetch('/api/journal-entries', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error();
+      await loadEntries();
+    } catch {
+      alert('Erreur lors de la suppression');
+    }
+  });
+}
+
+/* ─── PWA ─── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
