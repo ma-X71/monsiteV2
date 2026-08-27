@@ -21,7 +21,157 @@
 </style>
 </head>
 <body>
+<!-- ═══ POPUP RETRO ═══ -->
+<div id="retro-popup-overlay">
+  <div id="retro-popup">
+    <div class="rp-titlebar">
+      <span class="rp-titletext">★ maxans.fr — message.exe ★</span>
+      <button id="rp-close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="rp-body">
+      <div class="rp-dragon">
+        <img src="assetsmain/blinkingdragon.gif" alt="dragon">
+      </div>
+      <div class="rp-bubble">
+        <p class="rp-bonjour">BONJOUR</p>
+        <p class="rp-text">
+          voici mon humble site internet que je met a dispotition du monde connu.
+          globalement, je considère que faire son propre site avec sa propre patte
+          graphique est sensiblement mieux qu'un profil type insta.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
+<style>
+  #retro-popup-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 20, 80, 0.55);
+    z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #retro-popup-overlay.hidden { display: none; }
+
+  #retro-popup {
+    width: min(480px, 92vw);
+    background: #d4d0c8;
+    border: 2px solid #003fff;
+    box-shadow:
+      inset -1px -1px 0 #6080cc,
+      inset 1px 1px 0 #ffffff,
+      4px 4px 0 rgba(0,20,80,0.35);
+    font-family: 'Comic Sans MS', 'Space Mono', monospace;
+    animation: rp-pop 0.25s ease;
+  }
+  @keyframes rp-pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .rp-titlebar {
+    background: linear-gradient(90deg, #003fff, #6080cc);
+    color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 6px 4px 10px;
+  }
+  .rp-titletext {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.02em;
+  }
+  #rp-close {
+    width: 20px; height: 20px;
+    background: #d4d0c8;
+    border: 1px solid #001eaa;
+    box-shadow: inset -1px -1px 0 #6080cc, inset 1px 1px 0 #fff;
+    font-family: monospace;
+    font-size: 11px;
+    font-weight: bold;
+    color: #001eaa;
+    cursor: pointer;
+    line-height: 1;
+  }
+  #rp-close:active {
+    box-shadow: inset 1px 1px 0 #6080cc, inset -1px -1px 0 #fff;
+  }
+
+  .rp-body {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 18px 16px 16px;
+    background: repeating-linear-gradient(
+      45deg, #c8d0e8, #c8d0e8 10px, #d4d0c8 10px, #d4d0c8 20px
+    );
+  }
+
+  .rp-dragon {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .rp-dragon img {
+    width: 140px;
+    image-rendering: pixelated;
+    display: block;
+  }
+
+  .rp-bubble {
+    position: relative;
+    background: #ffffff;
+    border: 2px solid #003fff;
+    border-radius: 18px;
+    padding: 12px 14px;
+    flex: 1;
+  }
+  /* petite queue de bulle de pensée vers le dragon */
+  .rp-bubble::before {
+    content: '';
+    position: absolute;
+    left: -16px; bottom: 14px;
+    width: 10px; height: 10px;
+    background: #fff;
+    border: 2px solid #003fff;
+    border-radius: 50%;
+  }
+  .rp-bubble::after {
+    content: '';
+    position: absolute;
+    left: -26px; bottom: 8px;
+    width: 6px; height: 6px;
+    background: #fff;
+    border: 2px solid #003fff;
+    border-radius: 50%;
+  }
+
+  .rp-bonjour {
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #003fff;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .rp-text {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #001a66;
+  }
+
+  @media (max-width: 520px) {
+    .rp-body { flex-direction: column; align-items: center; text-align: center; }
+    .rp-bubble::before, .rp-bubble::after { display: none; }
+  }
+</style>
+
+<script>
+  (function() {
+    const overlay = document.getElementById('retro-popup-overlay');
+    const closeBtn = document.getElementById('rp-close');
+    if (!overlay || !closeBtn) return;
+    closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+  })();
+</script>
 <div id="vignette"></div>
 <div id="hint">Scroll</div>
 
@@ -249,6 +399,106 @@ setV('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
 window.addEventListener('resize', () => {
   scrollY = Math.min(scrollY, maxScroll());
 });
+</script>
+<!-- ═══════════════════════════════════════════════
+     LOGO REBONDISSANT (façon DVD)
+═══════════════════════════════════════════════ -->
+<style>
+  .dvd-logo {
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 300;
+    cursor: pointer;
+    will-change: transform;
+  }
+  .dvd-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+</style>
+
+<script>
+(function () {
+  // ── Configuration ──
+  const SIZE       = 90;    // taille en px
+  const SPEED      = 2.2;   // vitesse en px/frame
+  const GIF_SRC    = 'assetsmain/fetch.gif';
+  const SOUND_SRC  = 'assetsmain/apple-pay-sound.mp3';
+  const MAX_LOGOS  = 30;    // sécurité anti-spam de clics
+
+  let logoCount = 0;
+
+  function playPigeon() {
+    const audio = new Audio(SOUND_SRC);
+    audio.play().catch(() => {});
+  }
+
+  function spawnLogo(startX, startY) {
+    if (logoCount >= MAX_LOGOS) return;
+    logoCount++;
+
+    const el = document.createElement('div');
+    el.className = 'dvd-logo';
+    el.style.width  = SIZE + 'px';
+    el.style.height = SIZE + 'px';
+
+    const img = document.createElement('img');
+    img.src = GIF_SRC;
+    el.appendChild(img);
+    document.body.appendChild(el);
+
+    let x = startX !== undefined ? startX : Math.random() * (window.innerWidth  - SIZE);
+    let y = startY !== undefined ? startY : Math.random() * (window.innerHeight - SIZE);
+    let dx = Math.random() < 0.5 ? SPEED : -SPEED;
+    let dy = Math.random() < 0.5 ? SPEED : -SPEED;
+    let flipX = 1; // seul l'axe horizontal se retourne, jamais l'axe vertical
+
+    function applyTransform() {
+      el.style.transform = `translate(${x}px, ${y}px) scale(${flipX}, 1)`;
+    }
+
+    function bounceEffect() {
+      el.style.transition = 'transform 0.2s ease';
+      el.style.transform = `translate(${x}px, ${y}px) scale(${flipX * 1.2}, 1.2)`;
+      setTimeout(() => {
+        el.style.transition = 'none';
+        applyTransform();
+      }, 200);
+    }
+
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playPigeon();
+      spawnLogo(x, y);
+    });
+
+    function tick() {
+      x += dx;
+      y += dy;
+
+      const maxX = window.innerWidth  - SIZE;
+      const maxY = window.innerHeight - SIZE;
+
+      let bounced = false;
+
+      if (x <= 0)    { x = 0;    dx = Math.abs(dx);  flipX = 1;  bounced = true; }
+      if (x >= maxX) { x = maxX; dx = -Math.abs(dx); flipX = -1; bounced = true; }
+      if (y <= 0)    { y = 0;    dy = Math.abs(dy);  bounced = true; }
+      if (y >= maxY) { y = maxY; dy = -Math.abs(dy); bounced = true; }
+
+      if (bounced) bounceEffect();
+      else applyTransform();
+
+      requestAnimationFrame(tick);
+    }
+
+    tick();
+  }
+
+  spawnLogo();
+})();
 </script>
 </body>
 </html>
