@@ -116,11 +116,11 @@
     #list-count { font-size: 9px; letter-spacing: .5em; color: #6080cc; text-transform: uppercase; margin-bottom: 20px; }
 
     .entry {
-      background: #ffffff08; border: 1px solid #ffffff10; border-radius: 3px;
+      background: #ffffff0d; border: 1px solid #ffffff35; border-radius: 3px;
       padding: 18px 20px 20px; margin-bottom: 18px;
     }
     .entry-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-    .entry-date { font-size: 9px; letter-spacing: .3em; color: #6080cc; text-transform: uppercase; }
+    .entry-date { font-size: 9px; letter-spacing: .3em; color: #ffffff; text-transform: uppercase; }
     .entry-badge {
       font-size: 8px; letter-spacing: .3em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
     }
@@ -175,7 +175,7 @@
 
   <main>
     <div id="new-entry">
-      <textarea id="new-content" placeholder="À quoi tu penses aujourd'hui ?"></textarea>
+      <textarea id="new-content" placeholder="À quoi tu penses aujourd'hui ? (colle un lien direct .gif/.jpg/.png pour l'afficher)"></textarea>
       <div class="form-row">
         <div class="toggle">
           <button type="button" id="toggle-private" class="active">Privé</button>
@@ -271,6 +271,31 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
+const IMG_URL_RE = /(https?:\/\/[^\s<]+?\.(?:gif|jpe?g|png|webp)(?:\?[^\s<]*)?)/gi;
+
+function renderContentInto(container, str) {
+  container.innerHTML = '';
+  IMG_URL_RE.lastIndex = 0;
+  let lastIndex = 0, match;
+  while ((match = IMG_URL_RE.exec(str)) !== null) {
+    if (match.index > lastIndex) {
+      container.appendChild(document.createTextNode(str.slice(lastIndex, match.index)));
+    }
+    const img = document.createElement('img');
+    img.src = match[0];
+    img.loading = 'lazy';
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '4px';
+    img.style.display = 'block';
+    img.style.margin = '12px 0';
+    container.appendChild(img);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < str.length) {
+    container.appendChild(document.createTextNode(str.slice(lastIndex)));
+  }
+}
+
 /* ─── New entry toggle ─── */
 const togglePrivate = document.getElementById('toggle-private');
 const togglePublic  = document.getElementById('toggle-public');
@@ -321,7 +346,7 @@ async function loadEntries() {
           <div class="entry-badge ${e.is_public ? 'public' : 'private'}">${e.is_public ? 'Public' : 'Privé'}</div>
         </div>
         <div class="entry-sep"></div>
-        <div class="entry-content">${escapeHTML(e.content)}</div>
+        <div class="entry-content"></div>
         <textarea class="entry-edit-area">${escapeHTML(e.content)}</textarea>
         <div class="entry-actions">
           <button class="btn-edit">Modifier</button>
@@ -341,7 +366,10 @@ async function loadEntries() {
 
 function bindEntryActions(el) {
   const id       = el.dataset.id;
+  const entryObj = entries.find(x => String(x.id) === String(id));
   const contentEl = el.querySelector('.entry-content');
+  renderContentInto(contentEl, entryObj ? entryObj.content : '');
+
   const editArea  = el.querySelector('.entry-edit-area');
   const btnEdit   = el.querySelector('.btn-edit');
   const btnToggle = el.querySelector('.btn-toggle-vis');
@@ -373,7 +401,7 @@ function bindEntryActions(el) {
   });
 
   btnCancel.addEventListener('click', () => {
-    editArea.value = contentEl.textContent;
+    editArea.value = entryObj ? entryObj.content : contentEl.textContent;
     badge.classList.toggle('public', originalIsPublic);
     badge.classList.toggle('private', !originalIsPublic);
     refreshBadge();

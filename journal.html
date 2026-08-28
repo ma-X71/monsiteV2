@@ -67,7 +67,7 @@
     /* ─── Entrée ─── */
     .entry {
       position: relative;
-      background: #ffffff08;
+      background: #ffffff0d;
       border: 1px solid #ffffff35;
       border-radius: 3px;
       padding: 22px 26px 26px;
@@ -159,6 +159,34 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
+const IMG_URL_RE = /(https?:\/\/[^\s<]+?\.(?:gif|jpe?g|png|webp)(?:\?[^\s<]*)?)/gi;
+
+// Construit le contenu via de vrais nœuds DOM (createTextNode / createElement)
+// plutôt que par concaténation de texte : impossible d'échapper d'un attribut
+// même si l'URL contient des guillemets ou des caractères spéciaux.
+function renderContentInto(container, str) {
+  container.innerHTML = '';
+  IMG_URL_RE.lastIndex = 0;
+  let lastIndex = 0, match;
+  while ((match = IMG_URL_RE.exec(str)) !== null) {
+    if (match.index > lastIndex) {
+      container.appendChild(document.createTextNode(str.slice(lastIndex, match.index)));
+    }
+    const img = document.createElement('img');
+    img.src = match[0];
+    img.loading = 'lazy';
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '4px';
+    img.style.display = 'block';
+    img.style.margin = '12px 0';
+    container.appendChild(img);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < str.length) {
+    container.appendChild(document.createTextNode(str.slice(lastIndex)));
+  }
+}
+
 async function load() {
   const countEl   = document.getElementById('count');
   const entriesEl = document.getElementById('entries');
@@ -172,15 +200,20 @@ async function load() {
     countEl.textContent = entries.length + ' entrée' + (entries.length > 1 ? 's' : '');
     emptyEl.style.display = entries.length === 0 ? 'block' : 'none';
 
-    entriesEl.innerHTML = entries.map(e => `
-      <div class="entry">
+    entriesEl.innerHTML = entries.map((e, i) => `
+      <div class="entry" data-index="${i}">
         <div class="entry-date">${formatDate(e.created_at)}</div>
         <div class="entry-sep"></div>
-        <div class="entry-content">${escapeHTML(e.content)}</div>
+        <div class="entry-content"></div>
       </div>
     `).join('');
+
+    entriesEl.querySelectorAll('.entry').forEach(el => {
+      const i = Number(el.dataset.index);
+      renderContentInto(el.querySelector('.entry-content'), entries[i].content);
+    });
   } catch (e) {
-    countEl.textContent = 'erreur de chargement ( active ta 4g peut être)';
+    countEl.textContent = 'erreur de chargement';
   }
 }
 
