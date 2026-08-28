@@ -25,7 +25,7 @@
 <div id="retro-popup-overlay">
   <div id="retro-popup">
     <div class="rp-titlebar">
-      <span class="rp-titletext">★ maxans.fr — message.exe ★</span>
+      <span class="rp-titletext">Méchante pop up</span>
       <button id="rp-close" aria-label="Fermer">✕</button>
     </div>
     <div class="rp-body">
@@ -36,7 +36,7 @@
         <p class="rp-bonjour">BONJOUR</p>
         <p class="rp-text">
           Voici mon humble site internet que j'ai crée moi même.
-          Globalement, je trouve ça plus humain de pouvoir se batir une page dédié a son expression personelle qui peut changer en couleur , en largeur et selon ma volonté. N'hésitez pas à écouter des extraits d'album que j'ai dans ma collection de cd.
+          Globalement, je trouve ça plus humain de pouvoir se batir une page dédié a son expression personelle qui peut changer en couleur ,etc... N'hésitez pas à écouter des extraits d'album que j'ai dans ma collection de cd.
         </p>
       </div>
     </div>
@@ -216,7 +216,7 @@ const SECTIONS = [
     num: '002',
     title: 'Ce que jaime faire.',
     paras: [
-      'Faire de la physique , photographie , lire des livres de plus de 1500g<br>vendre des données personelles , collectioner des cd , randonnées'
+      'Faire de la physique , photographie , lire des livres de plus de 1500g<br>vendre des données personelles , collectioner des cd , randonnées , manger des <span class="floup-trigger" style="text-decoration:underline;cursor:pointer;">floups</span>'
     ]
   },
   {
@@ -261,7 +261,8 @@ const SECTIONS = [
     num: '007',
     title: 'Looking for internationnal friend',
     paras: [
-      'Im curently looking to talk to people living in other countries , I want to travel around the world but I think it would be wise to practice my langage first yk',
+      'I\'m currently trying to connect with people from other countries. 
+      I\'d love to travel the world someday, but I think it makes sense to work on my language skills first yk.',
     ]
   },
   {
@@ -497,6 +498,108 @@ window.addEventListener('resize', () => {
   }
 
   spawnLogo();
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════
+     PLUIE DE FLOUPS
+═══════════════════════════════════════════════ -->
+<style>
+.floup-img {
+  position: absolute;
+  will-change: transform;
+  pointer-events: none;
+  user-select: none;
+}
+</style>
+<script>
+(function () {
+  const FLOUP_FILES = [
+    'assetsmain/floups/PINACOLADA.png',
+    'assetsmain/floups/floup-kiwi.png',
+    'assetsmain/floups/COCO-1.png',
+    'assetsmain/floups/COCKTAIL-EXOTIQUE.png',
+    'assetsmain/floups/CITRON-VERT.png',
+    'assetsmain/floups/CHOCOLAT.png',
+    'assetsmain/floups/CASSIS.png',
+    'assetsmain/floups/CARAMEL.png',
+    'assetsmain/floups/BARBE-A-PAPA.png',
+    'assetsmain/floups/ANANAS-1.png'
+  ];
+
+  const FALL_SPEED = 6; // px par frame (~360px/s à 60fps)
+  const SPAWN_COUNT = 90;
+
+  let floupY = 0;
+  const activeFloups = []; // { els:[haut,centre,bas], spawnFloupY, rot }
+
+  function spawnFloup() {
+    // On cible les PLANS (déformation 3D fixe), pas les BANDES (translatées par le scroll) —
+    // sinon le transform du floup se compose avec celui du scroll et casse tout.
+    const pHaut   = document.getElementById('plan-haut');
+    const pCentre = document.getElementById('plan-centre');
+    const pBas    = document.getElementById('plan-bas');
+    if (!pHaut || !pCentre || !pBas) return;
+
+    const file = FLOUP_FILES[Math.floor(Math.random() * FLOUP_FILES.length)];
+    const xPercent = Math.random() * 90 + 5;
+    const size = Math.random() * 60 + 40;
+    const rot = Math.random() * 360;
+
+    const spawnFloupY = floupY;
+
+    const els = [pHaut, pCentre, pBas].map(c => {
+      const img = document.createElement('img');
+      img.src = file;
+      img.className = 'floup-img';
+      img.style.left = xPercent + '%';
+      img.style.width = size + 'px';
+      img.style.top = '0px'; // position pilotée entièrement par transform ci-dessous
+      c.appendChild(img);
+      return img;
+    });
+
+    activeFloups.push({ els, spawnFloupY, rot });
+  }
+
+  // Délégation d'événement : fonctionne peu importe quand le span
+  // est injecté dans le DOM (les 3 copies b-haut/b-centre/b-bas incluses).
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.floup-trigger')) return;
+    let i = 0;
+    const interval = setInterval(() => {
+      spawnFloup();
+      i++;
+      if (i >= SPAWN_COUNT) clearInterval(interval);
+    },Math.random() * 70);
+  });
+
+  function floupTick() {
+    floupY += FALL_SPEED;
+    const tc = window.innerHeight * 0.15; // hauteur plan-haut / plan-bas
+    const hc = window.innerHeight * 0.70; // hauteur plan-centre
+
+    for (let i = activeFloups.length - 1; i >= 0; i--) {
+      const f = activeFloups[i];
+      const fallDistance = floupY - f.spawnFloupY;   // 0 → croissant depuis le spawn
+      const absoluteY = -50 + fallDistance;           // position réelle à l'écran (0 = haut viewport)
+
+      const [elHaut, elCentre, elBas] = f.els;
+      // Chaque plan affiche la tranche [0, sa_hauteur] de sa propre coordonnée locale.
+      // On convertit la position absolue écran vers la coordonnée locale de chaque plan :
+      elHaut.style.transform   = `translateY(${absoluteY}px) rotate(${f.rot}deg)`;
+      elCentre.style.transform = `translateY(${absoluteY - tc}px) rotate(${f.rot}deg)`;
+      elBas.style.transform    = `translateY(${absoluteY - tc - hc}px) rotate(${f.rot}deg)`;
+
+      if (fallDistance > window.innerHeight + 150) {
+        f.els.forEach(el => el.remove());
+        activeFloups.splice(i, 1);
+      }
+    }
+
+    requestAnimationFrame(floupTick);
+  }
+  floupTick();
 })();
 </script>
 </body>
