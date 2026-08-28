@@ -35,6 +35,132 @@
   width: 220px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
+.comments-widget {
+  width: 100%;
+  max-width: 700px;
+}
+.cw-input {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  background: #ffffff0d;
+  border: 1px solid #ffffff35;
+  border-radius: 3px;
+  color: #ffffff;
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 10px 12px;
+  outline: none;
+  margin-bottom: 10px;
+  transition: border-color .2s;
+}
+.cw-input:focus { border-color: #c8dcff70; }
+.cw-input::placeholder { color: #ffffff50; }
+
+.cw-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.cw-error {
+  font-size: 9px;
+  letter-spacing: .2em;
+  color: #ff9a9a;
+  text-transform: uppercase;
+}
+.cw-submit {
+  background: #c8dcff;
+  border: none;
+  border-radius: 20px;
+  color: #06091a;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+.cw-submit:disabled { opacity: .4; cursor: not-allowed; }
+
+.cw-list { display: flex; flex-direction: column; gap: 14px; }
+
+.cw-item {
+  border: 1px solid #ffffff25;
+  border-radius: 3px;
+  padding: 12px 14px 14px;
+}
+.cw-item-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cw-date {
+  font-size: 8px;
+  letter-spacing: .2em;
+  color: #6080cc;
+  text-transform: uppercase;
+}
+.cw-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  letter-spacing: .2em;
+  color: #ffcf8a;
+  text-transform: uppercase;
+}
+.cw-admin-badge svg { width: 14px; height: 14px; fill: #ffcf8a; }
+
+.cw-content {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #ffffff;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin-bottom: 10px;
+}
+
+.cw-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cw-like {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: #6080cc;
+  transition: color .2s;
+  padding: 0;
+}
+.cw-like svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; transition: fill .2s; }
+.cw-like.liked { color: #ff9a9a; }
+.cw-like.liked svg { fill: #ff9a9a; stroke: #ff9a9a; }
+
+.cw-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: #ff9a9a80;
+  transition: color .2s;
+}
+.cw-delete:hover { color: #ff9a9a; }
 </style>
 </head>
 <body>
@@ -263,6 +389,17 @@ const SECTIONS = [
     ]
   },
   {
+  num: '010',
+  title: 'Hater corner',
+  paras: [
+    '<div class="comments-widget">'
+    + '<textarea class="cw-input" maxlength="500" placeholder="Laisse un commentaire (anonyme, 1 par IP)"></textarea>'
+    + '<div class="cw-row"><span class="cw-error"></span><button class="cw-submit">Envoyer</button></div>'
+    + '<div class="cw-list">Chargement…</div>'
+    + '</div>'
+  ]
+},
+  {
     num: '005',
     title: 'A propos de moi.',
     paras: [
@@ -436,6 +573,172 @@ setV('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
 window.addEventListener('resize', () => {
   scrollY = Math.min(scrollY, maxScroll());
 });
+
+/* ═══ Commentaires ═══ */
+(function () {
+  const TOKEN_KEY = 'maxans_journal_token';
+  let isAdmin = false;
+  let comments = [];
+
+  const ADMIN_ICON = '<svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-4z"/></svg>';
+  const HEART_ICON = '<svg viewBox="0 0 24 24"><path d="M12 21s-7-4.4-10-9.2C.5 8.4 2 4.8 5.6 4.1 8 3.6 10.3 4.8 12 7c1.7-2.2 4-3.4 6.4-2.9C22 4.8 23.5 8.4 22 11.8 19 16.6 12 21 12 21z"/></svg>';
+
+  function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    const jours = ['dim','lun','mar','mer','jeu','ven','sam'];
+    const mois  = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+    return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} — ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+
+  async function checkAdmin() {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch('/api/journal-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const data = await res.json();
+      isAdmin = !!data.valid;
+    } catch { isAdmin = false; }
+  }
+
+  function renderList() {
+    const lists = document.querySelectorAll('.cw-list');
+    if (comments.length === 0) {
+      lists.forEach(l => l.innerHTML = '<p style="font-size:9px;letter-spacing:.3em;color:#6080cc;text-transform:uppercase;">Aucun commentaire</p>');
+      return;
+    }
+    const html = comments.map(c => `
+      <div class="cw-item" data-id="${c.id}">
+        <div class="cw-item-top">
+          <span class="cw-date">${formatDate(c.created_at)}</span>
+          ${c.is_admin ? `<span class="cw-admin-badge">${ADMIN_ICON}Admin</span>` : ''}
+        </div>
+        <div class="cw-content"></div>
+        <div class="cw-item-actions">
+          <button class="cw-like ${c.likedByMe ? 'liked' : ''}">${HEART_ICON}<span class="cw-like-count">${c.likes}</span></button>
+          ${isAdmin ? '<button class="cw-delete">Supprimer</button>' : ''}
+        </div>
+      </div>
+    `).join('');
+    lists.forEach(l => l.innerHTML = html);
+
+    document.querySelectorAll('.cw-item').forEach(el => {
+      const id = el.dataset.id;
+      const c = comments.find(x => String(x.id) === String(id));
+      el.querySelector('.cw-content').textContent = c ? c.content : '';
+    });
+  }
+
+  async function loadComments() {
+    try {
+      const res = await fetch('/api/comments');
+      const data = await res.json();
+      comments = data.comments || [];
+      renderList();
+    } catch {
+      document.querySelectorAll('.cw-list').forEach(l => l.textContent = 'Erreur de chargement');
+    }
+  }
+
+  async function submitComment(textarea, errorEl, btn) {
+    const content = textarea.value.trim();
+    errorEl.textContent = '';
+    if (!content) return;
+
+    btn.disabled = true;
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = getToken();
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ content })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        errorEl.textContent = data.error || 'Erreur';
+        return;
+      }
+
+      textarea.value = '';
+      document.querySelectorAll('.cw-input').forEach(i => i.value = '');
+      await loadComments();
+    } catch {
+      errorEl.textContent = 'Erreur réseau';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function toggleLike(id, btnEl) {
+    try {
+      const res = await fetch('/api/comment-likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId: id })
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+
+      const c = comments.find(x => String(x.id) === String(id));
+      if (c) { c.likes = data.likes; c.likedByMe = data.liked; }
+
+      document.querySelectorAll(`.cw-item[data-id="${id}"] .cw-like`).forEach(b => {
+        b.classList.toggle('liked', data.liked);
+        b.querySelector('.cw-like-count').textContent = data.likes;
+      });
+    } catch {}
+  }
+
+  async function deleteComment(id) {
+    if (!confirm('Supprimer ce commentaire ?')) return;
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) return;
+      comments = comments.filter(c => String(c.id) !== String(id));
+      renderList();
+    } catch {}
+  }
+
+  // Délégation d'événements : fonctionne sur les 3 copies (b-haut/b-centre/b-bas)
+  document.addEventListener('click', e => {
+    const submitBtn = e.target.closest('.cw-submit');
+    if (submitBtn) {
+      const widget = submitBtn.closest('.comments-widget');
+      submitComment(widget.querySelector('.cw-input'), widget.querySelector('.cw-error'), submitBtn);
+      return;
+    }
+    const likeBtn = e.target.closest('.cw-like');
+    if (likeBtn) {
+      const id = likeBtn.closest('.cw-item').dataset.id;
+      toggleLike(id, likeBtn);
+      return;
+    }
+    const delBtn = e.target.closest('.cw-delete');
+    if (delBtn) {
+      const id = delBtn.closest('.cw-item').dataset.id;
+      deleteComment(id);
+    }
+  });
+
+  (async () => {
+    await checkAdmin();
+    await loadComments();
+  })();
+})();
+
 </script>
 <!-- ═══════════════════════════════════════════════
      LOGO REBONDISSANT (façon DVD)
