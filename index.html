@@ -18,6 +18,23 @@
 .sg-msg { font-family:'Space Mono',monospace; font-size:10px; color:#223388; font-style:italic; letter-spacing:0.04em; transition:color .5s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sg-msg.on { color:#8aaaee; }
 .sg-bar { height:1px; background:linear-gradient(90deg,#4466bb,transparent); width:0; transition:width 1.2s ease; margin-top:6px; }
+
+#achievement-popup {
+  position: fixed;
+  bottom: 24px;
+  right: -240px;
+  z-index: 9999;
+  transition: right 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+#achievement-popup.show {
+  right: 0;
+}
+#achievement-popup img {
+  display: block;
+  width: 220px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
 </style>
 </head>
 <body>
@@ -174,6 +191,11 @@
 <div id="vignette"></div>
 <div id="hint">Scroll</div>
 
+<div id="achievement-popup">
+  <img src="assetsmain/steamachivmentrei.png" alt="Achievement unlocked">
+</div>
+<audio id="achievement-sound" src="assetsmain/steam-achievement.mp3" preload="auto"></audio>
+
 <div id="scene">
   <div id="cube-shell">
     <div id="plan-haut">   <div class="bande" id="b-haut"></div>   </div>
@@ -261,8 +283,7 @@ const SECTIONS = [
     num: '007',
     title: 'Looking for internationnal friend',
     paras: [
-      'I\'m currently trying to connect with people from other countries. 
-      I\'d love to travel the world someday, but I think it makes sense to work on my language skills first yk.',
+      'I\'m currently trying to connect with people from other countries. I\'d love to travel the world someday, but I think it makes sense to work on my language skills first yk.'
     ]
   },
   {
@@ -291,15 +312,13 @@ const SECTIONS = [
     + '</div>'
   ]
 },
-{ num: '', title: '', paras: [''] },
-{ num: '', title: '', paras: [''] },
 ];
 
 const N = SECTIONS.length;
 const vh = () => window.innerHeight;
 const TOP_CENTRE = () => vh() * 0.15;
 const H_CENTRE   = () => vh() * 0.70;
-const maxScroll  = () => (N - 1) * H_CENTRE();
+const maxScroll  = () => (N - 1) * H_CENTRE() + vh() * 0.15;
 
 function renderSection(s) {
   const parasHTML = s.paras.map((p, i) =>
@@ -342,6 +361,22 @@ window.addEventListener('touchmove', e => {
   hint.style.opacity = scrollY > 40 ? '0' : '1';
 }, { passive: true });
 
+// — Achievement popup —
+let achievementFired = false;
+
+function checkAchievement() {
+  if (achievementFired) return;
+  if (scrollY >= maxScroll() - 5) {
+    achievementFired = true;
+    const popup = document.getElementById('achievement-popup');
+    const sound = document.getElementById('achievement-sound');
+    popup.classList.add('show');
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+    setTimeout(() => popup.classList.remove('show'), 5000);
+  }
+}
+
 // — Boucle d'animation —
 function tick() {
   currentY += (scrollY - currentY) * 0.1;
@@ -352,6 +387,8 @@ function tick() {
   document.getElementById('b-haut').style.transform   = `translateY(${-y + tc}px)`;
   document.getElementById('b-centre').style.transform = `translateY(${-y}px)`;
   document.getElementById('b-bas').style.transform    = `translateY(${-y - hc}px)`;
+
+  checkAchievement();
 
   requestAnimationFrame(tick);
 }
