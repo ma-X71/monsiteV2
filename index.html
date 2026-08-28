@@ -304,6 +304,12 @@
     .rp-body { flex-direction: column; align-items: center; text-align: center; }
     .rp-bubble::before, .rp-bubble::after { display: none; }
   }
+
+  .cw-highlighted {
+  border: 1px solid #ffffff30;
+  border-radius: 4px;
+  padding: 24px;
+}
 </style>
 
 <script>
@@ -357,7 +363,8 @@ const SECTIONS = [
       ' Etudiant en CPGE — Université Nice Côte d\'Azur ' +
       '<br>Polymathe par nature.' +
       '<br><a href="mailto:contact@maxans.fr" style="color:white">contact@maxans.fr</a>' +
-      '<br><a href="http://instagram.com/maxans_albr" style="color:white">instagram.com/maxans_albr</a>'
+      '<br><a href="http://instagram.com/maxans_albr" style="color:white">instagram.com/maxans_albr</a>'+
+      '<br><a href="www.linkedin.com/in/maxans-albert-2a088b289" style="color:white">linkedin/maxans-albert</a>'
     ]
   },
   {
@@ -392,28 +399,38 @@ const SECTIONS = [
   num: '010',
   title: 'Hater corner',
   paras: [
-    '<div class="comments-widget">'
-    + '<textarea class="cw-input" maxlength="500" placeholder="Laisse un commentaire (anonyme, 1 par IP)"></textarea>'
+    '<div class="comments-widget cw-highlighted">'
+    + '<textarea class="cw-input" maxlength="500" placeholder="Laisse un UNIQUE commentaire (100% anonyme, 1 par IP)"></textarea>'
     + '<div class="cw-row"><span class="cw-error"></span><button class="cw-submit">Envoyer</button></div>'
     + '<div class="cw-list">Chargement…</div>'
     + '</div>'
   ]
 },
+{
+    num:'',
+    title:'',
+    paras: ['']
+  },
   {
     num: '005',
     title: 'A propos de moi.',
     paras: [
-      '老子 l\'avait déjà compris : celui qui sait ne parle pas, celui qui parle ne sait pas. Aujourd\'hui difficile de ne pas en rigoler. Je reste convaincu que la raison n\'épuise pas le réel : la lucidité sans émotion devient froide, l\'émotion sans lucidité devient naïve. C\'est dans cette tension que nous sommes contraint de vivre et c\'est précisément cette tension que notre époque a le plus de mal à tenir.',
-      'I don\'t use blue. I don\'t like it. It bugs me out. I hate it. <br>Dixit Kanye West'
+      '老子 l\'avait déjà compris : celui qui sait ne parle pas, celui qui parle ne sait pas. Aujourd\'hui, difficile de ne pas en sourire.La prépa a ceci de particulier qu\'elle nous apprend autant par ce qu\'elle nous enseigne que par ce qu\'elle nous inflige. On y découvre une réalité parfois moins aimable que celle que l\'on s\'était construite. Les professeurs n\'y sont d\'ailleurs pas en reste : capables de vous faire admirer leur maîtrise d\'un sujet avant de vous rappeler, quelques minutes plus tard, que la Convention de Genève n\'a manifestement jamais été ratifiée pour les colles de maths.',
+      'I don\'t use blue. I don\'t like it. It bugs me out. I hate it. <br>Dixit Kanye West',
     ]
+  },
+  {
+    num:'',
+    title:'',
+    paras: ['']
   },
   {
     num: '006',
     title: 'Pus d\'idée pour cette div',
     paras: [
       'Me pierdo por la orilla del mar, y a veces me quedo dormido en el pasto con el mistral en la cara. Sin más.',
-      'La raison qui m\'a poussé a développer pendant plusieurs semaine ce site est relativement anodin , la pensée d\'avoir un espace à soi sur l\'espace géant qu\'est internet en était deja une mais j\'avais juste envie de flex devant manî ',
-      'Je cherche du travail pour cet été alors prevenez moi si un poste de troubadour intermitent se libère :) '
+      'La raison qui m\'a poussé a développer pendant plusieurs semaine ce site est relativement anodin , la pensée d\'avoir un espace à soi sur l\'espace géant qu\'est internet en était deja une mais j\'avais juste envie de flex devant <a href="https://web-mani.com/" style="color:white">Manî</a> ',
+      'J\'éspere voyager en europe après mes concours cet été, ça va manger du riz dans 9 mois'
     ]
   },
   {
@@ -427,7 +444,7 @@ const SECTIONS = [
     num: '008',
     title: 'Fin.',
     paras: [
-      'Malheuresement c\est deja la fin de la page , tu peux remonter plus haut ou revenir ici quand j\'aurais eu le temps de rajouter du contenu '
+      'Malheuresement c\est deja la fin de la page , laisse un commentaire dans le hater corner ça m\'aide dans le référencement google , je veux enfin être n°1 de la page svp'
     ]
   },
   {
@@ -641,7 +658,7 @@ window.addEventListener('resize', () => {
       comments = data.comments || [];
       renderList();
     } catch {
-      document.querySelectorAll('.cw-list').forEach(l => l.textContent = 'Erreur de chargement');
+      document.querySelectorAll('.cw-list').forEach(l => l.textContent = 'Erreur de chargement gros neuille , rallume ta box ?');
     }
   }
 
