@@ -1026,7 +1026,6 @@ if (window.visualViewport) {
 
   async function vote(choice) {
     if (localStorage.getItem(CHOICE_KEY)) return;
-    localStorage.setItem(CHOICE_KEY, choice);
     lockButtons();
     try {
       const res = await fetch('/api/poll', {
@@ -1035,9 +1034,12 @@ if (window.visualViewport) {
         body: JSON.stringify({ choice })
       });
       const data = await res.json();
-      renderPct(data.votes_a || 0, data.votes_b || 0);
+      if (res.ok || res.status === 409) {
+        localStorage.setItem(CHOICE_KEY, choice);
+        renderPct(data.votes_a || 0, data.votes_b || 0);
+      }
     } catch (e) {
-      // silencieux — pas critique
+      console.error('Poll vote error:', e);
     }
   }
 

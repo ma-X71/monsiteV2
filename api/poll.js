@@ -1,5 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
 
+function getIP(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.socket?.remoteAddress || 'unknown';
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -23,10 +29,23 @@ module.exports = async function handler(req, res) {
     if (choice !== 'a' && choice !== 'b') {
       return res.status(400).json({ error: 'choice invalide' });
     }
-    const { data, error } = await supabase.rpc('increment_poll_vote', { choice });
+
+    const ip = getIP(req);
+    const { data, error } = await supabase.rpc('increment_poll_vote', {
+      choice_input: choice,
+      voter_ip: ip
+    });
     if (error) return res.status(500).json({ error: error.message });
+
     const row = Array.isArray(data) ? data[0] : data;
-    return res.json(row);
+    if (row.already_voted) {
+      return res.status(409).json({
+        error: 'Déjà voté depuis cette IP',
+        votes_a: row.votes_a,
+        votes_b: row.votes_b
+      });
+    }
+    return res.json({ votes_a: row.votes_a, votes_b: row.votes_b });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
