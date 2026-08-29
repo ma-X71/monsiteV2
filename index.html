@@ -1025,23 +1025,32 @@ if (window.visualViewport) {
   }
 
   async function vote(choice) {
-    if (localStorage.getItem(CHOICE_KEY)) return;
-    lockButtons();
-    try {
-      const res = await fetch('/api/poll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ choice })
-      });
-      const data = await res.json();
-      if (res.ok || res.status === 409) {
-        localStorage.setItem(CHOICE_KEY, choice);
-        renderPct(data.votes_a || 0, data.votes_b || 0);
-      }
-    } catch (e) {
-      console.error('Poll vote error:', e);
+  if (localStorage.getItem(CHOICE_KEY)) return;
+  lockButtons();
+  try {
+    const res = await fetch('/api/poll', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choice })
+    });
+    const data = await res.json();
+
+    if (res.ok || res.status === 409) {
+      localStorage.setItem(CHOICE_KEY, choice);
+      renderPct(data.votes_a || 0, data.votes_b || 0);
+    } else {
+      console.error('Poll vote failed:', res.status, data);
+      unlockButtons();
     }
+  } catch (e) {
+    console.error('Poll vote network error:', e);
+    unlockButtons();
   }
+}
+
+function unlockButtons() {
+  document.querySelectorAll('.poll-opt').forEach(btn => btn.disabled = false);
+}
 
   document.addEventListener('click', e => {
     const btn = e.target.closest('.poll-opt');
