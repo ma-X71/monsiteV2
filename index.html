@@ -45,6 +45,44 @@ _/oo OOOOO oo`  ooo   ooo  'o!o!o                  o!o!o` 'o!o         o!o`
 .sg-msg.on { color:#8aaaee; }
 .sg-bar { height:1px; background:linear-gradient(90deg,#4466bb,transparent); width:0; transition:width 1.2s ease; margin-top:6px; }
 
+.poll-box {
+  background: #0238d8;
+  border: 1px solid #ffffff22;
+  padding: 24px 26px;
+  width: min(500px, 90vw);
+  margin-top: 20px;
+}
+.poll-question {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  color: #c8dcff;
+  margin-bottom: 18px;
+}
+.poll-options { display: flex; gap: 10px; flex-wrap: wrap; }
+.poll-opt {
+  background: none;
+  border: 1px solid #4466bb;
+  color: #c8dcff;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.poll-opt:hover:not(:disabled) { border-color: #c8dcff; background: #ffffff10; }
+.poll-opt:disabled { opacity: .4; cursor: default; }
+.poll-result { margin-top: 16px; }
+.poll-result-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: #c8dcff;
+  padding: 6px 0;
+  border-bottom: 1px solid #ffffff14;
+}
+
 .worldmap-wrap {
   width: 100%;
   max-width: 700px;
@@ -604,6 +642,23 @@ const SECTIONS = [
     paras: ['']
   },
   {
+  num: '009',
+  title: 'Sondage.',
+  paras: [
+    '<div class="poll-box">'
+    + '<p class="poll-question">Mon site te plaît-il?</p>'
+    + '<div class="poll-options">'
+    + '<button class="poll-opt" data-poll-choice="a">Oui :)</button>'
+    + '<button class="poll-opt" data-poll-choice="b">Non :(</button>'
+    + '</div>'
+    + '<div class="poll-result" data-poll="result" style="display:none;">'
+    + '<div class="poll-result-row"><span>Oui</span><span data-poll="pct-a">0%</span></div>'
+    + '<div class="poll-result-row"><span>Non</span><span data-poll="pct-b">0%</span></div>'
+    + '</div>'
+    + '</div>'
+  ]
+},
+  {
     num: '006',
     title: 'Pus d\'idée pour cette div',
     paras: [
@@ -949,6 +1004,58 @@ if (window.visualViewport) {
     await checkAdmin();
     await loadComments();
   })();
+})();
+
+/*poll*/
+
+(function () {
+  const CHOICE_KEY = 'maxans_poll_choice';
+
+  function renderPct(votes_a, votes_b) {
+    const total = votes_a + votes_b;
+    const pctA = total ? Math.round((votes_a / total) * 100) : 0;
+    const pctB = total ? Math.round((votes_b / total) * 100) : 0;
+    document.querySelectorAll('[data-poll="pct-a"]').forEach(el => el.textContent = pctA + '%');
+    document.querySelectorAll('[data-poll="pct-b"]').forEach(el => el.textContent = pctB + '%');
+    document.querySelectorAll('[data-poll="result"]').forEach(el => el.style.display = 'block');
+  }
+
+  function lockButtons() {
+    document.querySelectorAll('.poll-opt').forEach(btn => btn.disabled = true);
+  }
+
+  async function vote(choice) {
+    if (localStorage.getItem(CHOICE_KEY)) return;
+    localStorage.setItem(CHOICE_KEY, choice);
+    lockButtons();
+    try {
+      const res = await fetch('/api/poll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ choice })
+      });
+      const data = await res.json();
+      renderPct(data.votes_a || 0, data.votes_b || 0);
+    } catch (e) {
+      // silencieux — pas critique
+    }
+  }
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.poll-opt');
+    if (!btn) return;
+    vote(btn.dataset.pollChoice);
+  });
+
+  // Si déjà voté, on lock direct et on va chercher les % sans revoter
+  const already = localStorage.getItem(CHOICE_KEY);
+  if (already) {
+    lockButtons();
+    fetch('/api/poll')
+      .then(r => r.json())
+      .then(d => renderPct(d.votes_a || 0, d.votes_b || 0))
+      .catch(() => {});
+  }
 })();
 
 </script>
