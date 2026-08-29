@@ -279,6 +279,43 @@ _/oo OOOOO oo`  ooo   ooo  'o!o!o                  o!o!o` 'o!o         o!o`
   transition: color .2s;
 }
 .cw-delete:hover { color: #ff9a9a; }
+
+#live-viewers {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9998;
+  background: #001680ee;
+  border: 1px solid #c8dcff20;
+  backdrop-filter: blur(8px);
+  padding: 8px 14px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: #c8dcff;
+}
+#live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #6dff8a;
+  box-shadow: 0 0 8px #6dff8aaa;
+  animation: livedot-pulse 2s ease-in-out infinite;
+}
+@keyframes livedot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+#rp-live-viewers {
+  margin-top: 10px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #6080cc;
+}
+
 </style>
 </head>
 <body>
@@ -300,6 +337,7 @@ _/oo OOOOO oo`  ooo   ooo  'o!o!o                  o!o!o` 'o!o         o!o`
           J'essaie de l'améliorer durant mon temps libre très restreint.
           Je ne sais pas trop ce que vous êtes venu chercher, mais c'est probablement quelque part.
         </p>
+        <p id="rp-live-viewers"><span id="live-count-popup">—</span> personne(s) regardent le site en ce moment</p>
       </div>
     </div>
   </div>
@@ -440,6 +478,10 @@ _/oo OOOOO oo`  ooo   ooo  'o!o!o                  o!o!o` 'o!o         o!o`
   })();
 </script>
 <div id="vignette"></div>
+<div id="live-viewers">
+  <span id="live-dot"></span>
+  <span id="live-count">—</span> en ligne
+</div>
 <div id="hint">Scroll</div>
 
 <div id="achievement-popup">
@@ -1270,6 +1312,43 @@ if (window.visualViewport) {
   }
 
   document.querySelectorAll('[data-map-inner]').forEach(initMap);
+})();
+</script>
+<script>
+(function() {
+  const HEARTBEAT_MS = 15000;
+  const POLL_MS = 10000;
+
+  const sessionId = sessionStorage.getItem('maxans_session_id')
+    || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+  sessionStorage.setItem('maxans_session_id', sessionId);
+
+  async function heartbeat() {
+    try {
+      await fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+    } catch (e) {}
+  }
+
+  async function pollCount() {
+    try {
+      const res = await fetch('/api/presence');
+      const data = await res.json();
+      const val = data.count ?? '—';
+      const badge = document.getElementById('live-count');
+      const popup = document.getElementById('live-count-popup');
+      if (badge) badge.textContent = val;
+      if (popup) popup.textContent = val;
+    } catch (e) {}
+  }
+
+  heartbeat();
+  pollCount();
+  setInterval(heartbeat, HEARTBEAT_MS);
+  setInterval(pollCount, POLL_MS);
 })();
 </script>
 </body>
