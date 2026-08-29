@@ -6,6 +6,14 @@
   <link rel="icon" type="image/gif" href="assetsmain/kone01.gif">
   <title>Maxans.fr</title>
   <link rel="stylesheet" href="style.css">
+
+/*     o o o o o o o . . .   ______________________________ _____=======_||____
+   o      _____           ||                            | |                 |
+ .][__n_n_|DD[  ====_____  | Twin , pourquoi tu regarde | | me mp pour jouer|
+ (________|__|_[_________]_|____________ça______________|_|_____à CK3_______|
+_/oo OOOOO oo`  ooo   ooo  'o!o!o                  o!o!o` 'o!o         o!o`
+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+*/
   <style>
 #sg { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:#ffffff18; border:1px solid #ffffff22; width:min(780px,90vw); margin-top:32px; }
 .sg-cell { background:#0238d8; padding:18px 20px; display:flex; flex-direction:column; gap:6px; }
@@ -18,6 +26,98 @@
 .sg-msg { font-family:'Space Mono',monospace; font-size:10px; color:#223388; font-style:italic; letter-spacing:0.04em; transition:color .5s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sg-msg.on { color:#8aaaee; }
 .sg-bar { height:1px; background:linear-gradient(90deg,#4466bb,transparent); width:0; transition:width 1.2s ease; margin-top:6px; }
+
+.worldmap-wrap {
+  width: 100%;
+  max-width: 700px;
+  content-visibility: auto;
+  contain-intrinsic-size: 700px 391px;
+}
+.worldmap-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.79 / 1; /* valeur de secours, corrigée précisément en JS d'après le viewBox réel du SVG chargé */
+  background: #0238d8;
+  border: 1px solid #ffffff18;
+  border-radius: 3px;
+  overflow: hidden;
+  /* Isole la carte dans son propre calque GPU : les ~2300 chemins du SVG ne
+     sont ainsi rastérisés qu'une fois, et ne sont plus re-peints à chaque
+     frame du translateY appliqué par la boucle de scroll custom (tick()). */
+  will-change: transform;
+  transform: translateZ(0);
+}
+.worldmap-inner svg.wm-base { display: block; width: 100%; height: 100%; }
+
+.worldmap-links {
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+  /* Calque GPU séparé : l'animation des pointillés ne re-peint que ce calque
+     (petit), jamais la carte des terres en dessous (lourde). */
+  will-change: transform;
+  transform: translateZ(0);
+}
+.worldmap-links path.wm-link-glow {
+  fill: none;
+  stroke: #7fd8ff;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  opacity: 0.35;
+  filter: blur(2px);
+  /* Statique (pas d'animation ici) : le filtre n'est calculé qu'une fois et
+     mis en cache par le navigateur, au lieu d'être recalculé à chaque frame. */
+}
+.worldmap-links path.wm-link-line {
+  fill: none;
+  stroke: #7fd8ff;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke; /* sinon le trait est en unités du SVG (~2750 de large) et devient sub-pixel à l'écran */
+  stroke-linecap: round;
+  stroke-dasharray: 6 5;
+  opacity: 0.9;
+  animation: wm-dash 10s linear infinite;
+}
+@keyframes wm-dash { to { stroke-dashoffset: -200; } }
+
+.wm-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  cursor: pointer;
+}
+.wm-pin svg { display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
+.wm-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #001680ee;
+  border: 1px solid #c8dcff30;
+  color: #c8dcff;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.wm-pin:hover .wm-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.worldmap-legend {
+  display: flex; gap: 24px; margin-top: 18px;
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  letter-spacing: 0.15em; color: #ffffffcc; text-transform: uppercase;
+}
+.worldmap-legend span { display: flex; align-items: center; gap: 8px; }
+.wm-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.wm-dot.wm-visited { background: #c8dcff; }
+.wm-dot.wm-want { background: #ffb84d; }
+
+@media (max-width: 768px) {
+  .worldmap-legend { flex-direction: column; gap: 8px; }
+}
 
 #achievement-popup {
   position: fixed;
@@ -178,8 +278,9 @@
       <div class="rp-bubble">
         <p class="rp-bonjour">BONJOUR</p>
         <p class="rp-text">
-          Voici mon humble site internet que j'ai crée moi même.
-          Globalement, je trouve ça plus humain de pouvoir se batir une page dédié a son expression personelle qui peut changer en couleur ,etc... N'hésitez pas à écouter des extraits d'album que j'ai dans ma collection de cd.
+          Voici mon humble site internet que j'ai créé moi-même.
+          J'essaie de l'améliorer durant mon temps libre très restreint.
+          Je ne sais pas trop ce que vous êtes venu chercher, mais c'est probablement quelque part.
         </p>
       </div>
     </div>
@@ -420,6 +521,24 @@ const SECTIONS = [
     ]
   },
   {
+    num:'',
+    title:'',
+    paras: ['']
+  },
+  {
+  num: '007c',
+  title: 'Là où\nje suis allé.',
+  paras: [
+    '<div class="worldmap-wrap">'
+    + '<div class="worldmap-inner" data-map-inner></div>'
+    + '<div class="worldmap-legend">'
+    + '<span><i class="wm-dot wm-visited"></i>Déjà été</span>'
+    + '<span><i class="wm-dot wm-want"></i>Envie d\'y aller</span>'
+    + '</div>'
+    + '</div>'
+  ]
+},
+{
     num:'',
     title:'',
     paras: ['']
@@ -959,5 +1078,166 @@ window.addEventListener('resize', () => {
   floupTick();
 })();
 </script>
+
+<script>
+/*CARTE — lieux visités / envies de voyage*/
+(function () {
+  // lieux : liste à éditer
+  // type: 'visited' (déjà été) ou 'want' (envie d'y aller)
+  const PLACES = [
+    { id: 'nice',    name: 'Nice',          lat: 43.7102, lng: 7.2620,   type: 'visited' },
+    { id: 'toulouse',name: 'Toulouse',      lat: 43.6047, lng: 1.4442,   type: 'visited' },
+    { id: 'barca',   name: 'Barcelone',     lat: 41.3874, lng: 2.1686,   type: 'visited' },
+    { id: 'Paris',   name: 'Paris',         lat: 48, lng: 2.34, type: 'visited' },
+    { id: 'Martinique',     name: 'Martinique',      lat: 14, lng: -60, type: 'visited' },
+    { id: 'Guadeloupe',     name: 'Guadeloupe',      lat: 16, lng: -61, type: 'visited' },
+    { id: 'Stockholm',     name: 'Stockholm',      lat: 59.3, lng: 18.1, type: 'visited' },
+    { id: 'Ldn',     name: 'Londre',      lat: 51.5, lng: -0.07, type: 'visited' },
+    { id: 'Cgq',     name: 'Chongqing',      lat: 29, lng: 106, type: 'want' },
+    { id: 'Kmk',     name: 'Kamakura',      lat: 35.3, lng: 139.5, type: 'want' },
+    { id: 'nyc',     name: 'New York',      lat: 40.7128, lng: -74.0060, type: 'want' },
+    { id: 'Kyr',     name: 'Issyk-kul',      lat: 42.4, lng: 77.2, type: 'want' },
+    { id: 'Nz',     name: 'Nouvelle-Zélande',      lat: -43, lng: 174, type: 'want' }, // longitude corrigée (était -170)
+    { id: 'Tt',     name: 'Grand Teton Nationnal parc',      lat: 43.7, lng: -110, type: 'want' },
+  ];
+
+  // ── Les fils qui relient certains points (par id) ──
+  const LINKS = [
+    { from: 'Paris', to: 'nyc' },
+    { from: 'Martinique', to: 'nice' },
+    { from: 'Stockholm', to: 'nice' }
+  ];
+
+  const PIN_COLORS = { visited: '#c8dcff', want: '#ffb84d' };
+
+  function pinSVG(color) {
+    return '<svg viewBox="0 0 24 32" width="11" height="15">'
+      + '<path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="' + color + '"/>'
+      + '<circle cx="12" cy="12" r="4.5" fill="#0238d8"/>'
+      + '</svg>';
+  }
+
+  function project(lat, lng, vb) {
+    // équirectangulaire : lng -180..180 sur toute la largeur, lat 90..-90 sur toute la hauteur
+    const x = vb.x + (lng + 180) / 360 * vb.w;
+    const y = vb.y + (90 - lat) / 180 * vb.h;
+    return { x, y };
+  }
+
+  function arcPath(p1, p2) {
+    const mx = (p1.x + p2.x) / 2;
+    const my = (p1.y + p2.y) / 2;
+    const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    const cy = my - dist * 0.22; // bombe l'arc vers le haut, façon trajet d'avion
+    return 'M ' + p1.x + ' ' + p1.y + ' Q ' + mx + ' ' + cy + ' ' + p2.x + ' ' + p2.y;
+  }
+
+  async function initMap(container) {
+  const res = await fetch('assetsmain/world-map.svg');
+  const svgText = await res.text();
+
+  container.innerHTML = svgText;
+  const baseSVG = container.querySelector('svg');
+  if (!baseSVG) return;
+  baseSVG.classList.add('wm-base');
+  baseSVG.removeAttribute('width');
+  baseSVG.removeAttribute('height');
+
+  // Force la couleur de chaque forme, peu importe comment le SVG d'origine
+  // est stylé (attribut, style inline, classe CSS interne). setProperty avec
+  // 'important' bat tout le reste.
+  // vector-effect:non-scaling-stroke est essentiel ici : le SVG source fait
+  // ~2750 unités de large mais s'affiche à ~700px, donc un stroke-width "normal"
+  // devient invisible une fois réduit (0.5 unité ≈ 0.1px à l'écran). Avec
+  // non-scaling-stroke, le stroke-width est interprété en pixels écran réels,
+  // peu importe le facteur de réduction.
+  baseSVG.querySelectorAll('path, g').forEach(el => {
+    const isOcean = el.classList && el.classList.contains('ocean');
+    if (isOcean) {
+      // La mer reste transparente : c'est le fond bleu du conteneur (.worldmap-inner)
+      // qui joue le rôle de l'océan. Avant, ocean et terres avaient la même couleur
+      // → tout se confondait en un seul aplat, d'où le "fond uni" sans relief visible.
+      el.style.setProperty('fill', 'transparent', 'important');
+      el.style.setProperty('stroke', 'none', 'important');
+    } else {
+      el.style.setProperty('fill', '#3a58d6', 'important');
+      el.style.setProperty('stroke', '#dbe6ffb3', 'important');
+      el.style.setProperty('stroke-width', '1', 'important');
+      el.style.setProperty('vector-effect', 'non-scaling-stroke', 'important');
+    }
+  });
+
+  const viewBoxAttr = baseSVG.getAttribute('viewBox');
+  const [vx, vy, vw, vh] = viewBoxAttr.split(/\s+/).map(Number);
+  const vb = { x: vx, y: vy, w: vw, h: vh };
+
+  // Le conteneur avait un aspect-ratio fixe (2/1) en CSS, mais le viewBox réel
+  // du SVG n'est pas forcément 2:1 (ex: 2752.766 x 1537.631 ≈ 1.79:1). Résultat :
+  // le SVG était affiché en "pillarbox" (bandes vides sur les côtés) car le
+  // navigateur préserve son ratio d'origine par défaut, et les pins positionnés
+  // en % du conteneur tombaient à côté du continent affiché. On force ici le
+  // conteneur à adopter EXACTEMENT le ratio du SVG chargé, donc plus aucune bande
+  // vide et les % de position correspondent pile à ce qui est affiché.
+  container.style.aspectRatio = vw + ' / ' + vh;
+
+  // Cadre de calibration géographique. NE PAS recalculer ceci depuis le SVG
+  // (ex: bbox de la forme "ocean") : sur ce fichier, cette forme n'est PAS un
+  // rectangle propre aligné sur -180/180 et 90/-90 (probablement une bordure
+  // décorative ou un artefact de tracé de côte qui déborde), ce qui décalait
+  // silencieusement TOUS les points d'environ 10° vers l'est — visible par
+  // exemple sur le cluster France/Europe qui tombait sur l'Allemagne/Pologne.
+  // Ces constantes ont été vérifiées par deux méthodes indépendantes :
+  // 1) l'étendue documentée des USA continentaux (Cape Alava, WA à
+  //    -124.78° / West Quoddy Head, ME à -66.95°, et 24.5°N à 49°N),
+  // 2) le centre de plusieurs pays "compacts" répartis sur le globe
+  //    (Islande, Uruguay, Égypte, Botswana, Zambie, Kenya).
+  // Les deux convergent vers le même cadre à moins de 1% près.
+  const calib = { x: -105.4, y: 61.6, w: 2752.6, h: 1391 };
+
+  // ... le reste de la fonction (fils + pins) ne change pas
+    // Overlay SVG pour les fils
+    const linksSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    linksSVG.setAttribute('class', 'worldmap-links');
+    linksSVG.setAttribute('viewBox', viewBoxAttr);
+    LINKS.forEach(link => {
+      const a = PLACES.find(p => p.id === link.from);
+      const b = PLACES.find(p => p.id === link.to);
+      if (!a || !b) return;
+      const p1 = project(a.lat, a.lng, calib);
+      const p2 = project(b.lat, b.lng, calib);
+      const d = arcPath(p1, p2);
+
+      const glow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      glow.setAttribute('class', 'wm-link-glow');
+      glow.setAttribute('d', d);
+      linksSVG.appendChild(glow);
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      line.setAttribute('class', 'wm-link-line');
+      line.setAttribute('d', d);
+      linksSVG.appendChild(line);
+    });
+    container.appendChild(linksSVG);
+
+    // Pins en % (indépendants du viewBox, simples à positionner en CSS)
+    PLACES.forEach(place => {
+      const pos = project(place.lat, place.lng, calib);
+      const leftPct = ((pos.x - vb.x) / vb.w) * 100;
+      const topPct  = ((pos.y - vb.y) / vb.h) * 100;
+
+      const pin = document.createElement('div');
+      pin.className = 'wm-pin';
+      pin.style.left = leftPct + '%';
+      pin.style.top  = topPct + '%';
+      pin.innerHTML = pinSVG(PIN_COLORS[place.type])
+        + '<span class="wm-tooltip">' + place.name + '</span>';
+      container.appendChild(pin);
+    });
+  }
+
+  document.querySelectorAll('[data-map-inner]').forEach(initMap);
+})();
+</script>
+
 </body>
 </html>
