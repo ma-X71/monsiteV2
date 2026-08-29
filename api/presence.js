@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const ACTIVE_WINDOW_S = 30; // considéré "actif" si heartbeat < 30s
+const ACTIVE_WINDOW_S = 25; // considéré "actif" si heartbeat < 30s
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

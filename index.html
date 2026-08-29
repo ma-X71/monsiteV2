@@ -1316,8 +1316,8 @@ if (window.visualViewport) {
 </script>
 <script>
 (function() {
-  const HEARTBEAT_MS = 15000;
-  const POLL_MS = 10000;
+  const HEARTBEAT_MS = 10000;
+  const POLL_MS = 3000;
 
   const sessionId = sessionStorage.getItem('maxans_session_id')
     || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
