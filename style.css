@@ -76,6 +76,12 @@
     b-centre : translateY(-y_scroll)
     b-bas    : translateY(-y_scroll - HEIGHT_CENTRE)    = translateY(-y - 70vh)
   */
+
+  :root {
+  --tc: 15vh; /* fallback avant exécution du JS */
+  --hc: 70vh;
+}
+
   #copyright {
   position: relative;
   bottom: 10px;
@@ -106,29 +112,32 @@
   }
 
   #plan-haut {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: calc(15vh + 1px);
-    overflow: hidden;
-    transform-origin: bottom center;
-    transform: rotateX(-55deg);
-    background: #003fff;
-  }
+  position: absolute;
+  top: 0; left: 0; width: 100%;
+  height: calc(var(--tc) + 1px);
+  overflow: hidden;
+  transform-origin: bottom center;
+  transform: rotateX(-55deg);
+  background: #003fff;
+}
 
   #plan-centre {
-    position: absolute;
-    top: 15vh; left: 0; width: 100%; height: 70vh;
-    overflow: hidden;
-    background: #003fff;
-  }
+  position: absolute;
+  top: var(--tc); left: 0; width: 100%;
+  height: var(--hc);
+  overflow: hidden;
+  background: #003fff;
+}
 
   #plan-bas {
-    position: absolute;
-    top: calc(85vh - 1px); left: 0; width: 100%; height: calc(15vh + 1px);
-    overflow: hidden;
-    transform-origin: top center;
-    transform: rotateX(55deg);
-    background: #003fff;
-  }
+  position: absolute;
+  top: calc(var(--tc) + var(--hc) - 1px); left: 0; width: 100%;
+  height: calc(var(--tc) + 1px);
+  overflow: hidden;
+  transform-origin: top center;
+  transform: rotateX(55deg);
+  background: #003fff;
+}
 
   /* Chaque bande est positionnée absolue dans son plan */
   .bande {
@@ -139,16 +148,16 @@
 
   /* Sections — height = 70vh pour remplir le plan centre */
   .section {
-    width: 100%;
-    height: 70vh;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 100px 0 0 170px;
-    text-align: left;
-    gap: 0;
-  }
+  width: 100%;
+  height: var(--hc);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 100px 0 0 170px;
+  text-align: left;
+  gap: 0;
+}
 
   .s-num {
     font-family: 'Space Mono', monospace;

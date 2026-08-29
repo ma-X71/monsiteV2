@@ -612,6 +612,17 @@ const TOP_CENTRE = () => vh() * 0.15;
 const H_CENTRE   = () => vh() * 0.70;
 const maxScroll  = () => (N - 1) * H_CENTRE() + vh() * 0.15;
 
+// Sur mobile, 1vh (CSS) et window.innerHeight (JS) ne correspondent pas
+// forcément (barre d'adresse, safe-area...), ce qui décale la jonction entre
+// les 3 plans. On pousse la même mesure JS dans des custom properties CSS,
+// pour que la géométrie des plans (CSS) et les translateY (JS) partagent
+// exactement la même source de vérité.
+function updateViewportVars() {
+  document.documentElement.style.setProperty('--tc', TOP_CENTRE() + 'px');
+  document.documentElement.style.setProperty('--hc', H_CENTRE() + 'px');
+}
+updateViewportVars();
+
 function renderSection(s) {
   const parasHTML = s.paras.map((p, i) =>
     (i > 0 ? '<div class="s-divider"></div>' : '') + '<p>' + p + '</p>'
@@ -727,7 +738,11 @@ setV('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
 } catch(e) { setV('sha','n/a'); } })();
 window.addEventListener('resize', () => {
   scrollY = Math.min(scrollY, maxScroll());
+  updateViewportVars();
 });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', updateViewportVars);
+}
 
 /* ═══ Commentaires ═══ */
 (function () {
