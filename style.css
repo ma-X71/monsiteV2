@@ -76,6 +76,19 @@
     b-centre : translateY(-y_scroll)
     b-bas    : translateY(-y_scroll - HEIGHT_CENTRE)    = translateY(-y - 70vh)
   */
+  #copyright {
+  position: relative;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: #ffffff;
+  text-transform: uppercase;
+  z-index: 250;
+  pointer-events: none;
+}
 
   #scene {
     position: fixed;
