@@ -108,6 +108,7 @@
   #cube-shell {
     position: absolute;
     inset: 0;
+    -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
   }
 
@@ -116,8 +117,12 @@
   top: 0; left: 0; width: 100%;
   height: calc(var(--tc) + 1px);
   overflow: hidden;
+  clip-path: inset(0);
+  -webkit-clip-path: inset(0);
   transform-origin: bottom center;
   transform: rotateX(-55deg);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   background: #003fff;
 }
 
@@ -126,6 +131,11 @@
   top: var(--tc); left: 0; width: 100%;
   height: var(--hc);
   overflow: hidden;
+  clip-path: inset(0);
+  -webkit-clip-path: inset(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   background: #003fff;
 }
 
@@ -134,8 +144,12 @@
   top: calc(var(--tc) + var(--hc) - 1px); left: 0; width: 100%;
   height: calc(var(--tc) + 1px);
   overflow: hidden;
+  clip-path: inset(0);
+  -webkit-clip-path: inset(0);
   transform-origin: top center;
   transform: rotateX(55deg);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   background: #003fff;
 }
 
